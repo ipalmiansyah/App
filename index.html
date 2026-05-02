@@ -10121,6 +10121,8 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .kgi-aktif-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
 .kgi-info{flex:1;}.kgi-judul{font-size:13px;font-weight:800;}.kgi-det{font-size:11px;color:var(--teks2);margin-top:2px;}
 .btn-batal-kgi{padding:5px 10px;background:var(--merah-bg);color:var(--merah);border:1px solid #fecaca;border-radius:8px;font-family:var(--font);font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;}
+.ket-opt{width:100%;padding:10px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;font-family:var(--font);font-size:13px;font-weight:700;color:var(--teks2);cursor:pointer;text-align:left;transition:all 0.15s;}
+.ket-opt:active,.ket-opt.aktif{background:var(--ungu-bg);color:var(--ungu);border-color:var(--ungu);font-weight:800;}
 .ld-wrap{display:none;position:fixed;inset:0;z-index:400;background:rgba(255,255,255,0.9);backdrop-filter:blur(3px);flex-direction:column;align-items:center;justify-content:center;gap:14px;}
 .ld-wrap.aktif{display:flex;}
 .ld-spin{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--g4);border-radius:50%;animation:ls 0.7s linear infinite;}
@@ -10359,13 +10361,17 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   </div>
 </div>
 
-<!-- SHEET INPUT KEGIATAN -->
+<!-- SHEET INPUT KEGIATAN (UNIFIED) -->
 <div class="sheet-bg" id="sheet-kgi">
   <div class="sheet-box">
     <div class="sheet-handle"></div>
     <div class="sheet-title">📅 Input Kegiatan</div>
+
+    <!-- Verifikasi HP piket -->
     <div id="kgi-step-pin">
-      <p style="font-size:13px;color:var(--teks2);font-weight:600;text-align:center;margin-bottom:14px">Masukkan PIN untuk verifikasi<br><span style="font-size:11px;color:var(--teks3)">Hanya guru piket hari ini yang dapat input</span></p>
+      <div style="background:var(--biru-bg);border:1px solid var(--biru-bd);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--biru);font-weight:700;text-align:center;margin-bottom:14px">
+        Hanya guru piket hari ini yang dapat input
+      </div>
       <div class="pin-disp" id="kgi-pin-disp">____</div>
       <div class="numpad">
         <button class="nb" onclick="npKgi(1)">1</button><button class="nb" onclick="npKgi(2)">2</button><button class="nb" onclick="npKgi(3)">3</button>
@@ -10374,18 +10380,71 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
         <button class="nb hapus" onclick="npKgi('H')">⌫</button><button class="nb" onclick="npKgi(0)">0</button><button class="nb ok" onclick="npKgi('OK')">✓</button>
       </div>
     </div>
+
+    <!-- Form input -->
     <div id="kgi-step-form" style="display:none">
-      <div style="background:var(--g-bg);border:1px solid var(--g-bd);border-radius:10px;padding:8px 12px;text-align:center;font-size:12px;font-weight:800;color:var(--g3);margin-bottom:12px" id="kgi-piket-info"></div>
-      <div class="form-group"><label>Tanggal</label><input type="date" id="kgi-tgl"></div>
-      <div class="form-row">
-        <div class="form-group"><label>Jam Mulai</label><input type="time" id="kgi-mulai"></div>
-        <div class="form-group"><label>Jam Selesai</label><input type="time" id="kgi-selesai"></div>
+      <div style="background:var(--g-bg);border:1px solid var(--g-bd);border-radius:10px;padding:8px 12px;text-align:center;font-size:12px;font-weight:800;color:var(--g3);margin-bottom:14px" id="kgi-piket-info"></div>
+
+      <!-- Tanggal (otomatis hari ini) -->
+      <div class="form-group">
+        <label>Tanggal</label>
+        <input type="date" id="kgi-tgl" readonly style="background:var(--bg);color:var(--teks3)">
       </div>
-      <div class="form-group"><label>Keterangan</label><textarea id="kgi-ket" placeholder="Rapat Guru, Hari Guru, Kegiatan Seni..."></textarea></div>
-      <button class="btn-sub ungu" onclick="simpanKgi()">💾 Simpan Kegiatan</button>
-      <div class="sec-title" style="margin-top:6px">Kegiatan Aktif Hari Ini</div>
+
+      <!-- Berlaku untuk -->
+      <div class="form-group">
+        <label>Berlaku Untuk</label>
+        <div style="display:flex;gap:8px;">
+          <button id="btn-semua-guru" class="btn-sub hijau" style="flex:1;padding:10px;font-size:12px;margin:0" onclick="setBerlakuUntuk('semua')">Semua Guru</button>
+          <button id="btn-guru-tertentu" class="btn-sub" style="flex:1;padding:10px;font-size:12px;margin:0;background:var(--bg);color:var(--teks2);border:1.5px solid var(--border)" onclick="setBerlakuUntuk('tertentu')">Guru Tertentu</button>
+        </div>
+      </div>
+
+      <!-- Pilih guru (tampil jika guru tertentu) -->
+      <div class="form-group" id="kgi-guru-wrap" style="display:none">
+        <label>Nama Guru</label>
+        <select class="f-sel" id="kgi-guru" style="width:100%;font-size:13px;padding:10px" onchange="updateJamDropdown()">
+          <option value="">-- Pilih Guru --</option>
+        </select>
+      </div>
+
+      <!-- Jam Mulai & Selesai (dropdown dari jadwal) -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Jam Mulai</label>
+          <select class="f-sel" id="kgi-mulai" style="width:100%;padding:10px" onchange="updateJamSelesai()">
+            <option value="">-- Pilih --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Jam Selesai</label>
+          <select class="f-sel" id="kgi-selesai" style="width:100%;padding:10px">
+            <option value="">-- Pilih --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Keterangan -->
+      <div class="form-group">
+        <label>Keterangan</label>
+        <div style="display:flex;flex-direction:column;gap:8px;" id="kgi-ket-opts">
+          <button class="ket-opt" onclick="pilihKet('Rapat')">Rapat</button>
+          <button class="ket-opt" onclick="pilihKet('Sakit')">Sakit</button>
+          <button class="ket-opt" onclick="pilihKet('Izin')">Izin</button>
+          <button class="ket-opt" onclick="pilihKet('Dinas Luar')">Dinas Luar</button>
+          <button class="ket-opt" id="btn-lainnya" onclick="pilihKet('lainnya')">Lainnya...</button>
+        </div>
+        <input type="text" id="kgi-ket-manual" placeholder="Ketik keterangan..." style="display:none;margin-top:8px" oninput="kgiKetManual=this.value">
+        <div style="margin-top:6px;font-size:11px;color:var(--teks3)">Dipilih: <span id="kgi-ket-preview" style="color:var(--g4);font-weight:800">—</span></div>
+      </div>
+
+      <button class="btn-sub ungu" onclick="simpanKgi()" style="margin-top:4px">💾 Simpan Kegiatan</button>
+
+      <!-- Daftar kegiatan aktif hari ini -->
+      <div class="sec-title" style="margin-top:14px">Kegiatan Aktif Hari Ini</div>
       <div id="kgi-aktif-list"></div>
     </div>
+
     <button class="btn-cancel" onclick="tutupSheetKgi()">Tutup</button>
   </div>
 </div>
@@ -10396,25 +10455,6 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   <div id="suk-judul">Berhasil!</div><div id="suk-guru"></div><div id="suk-det"></div>
   <div class="suk-jam" id="suk-jam"></div>
   <button class="btn-suk" onclick="$('suk-screen').classList.remove('aktif')">Selesai</button>
-</div>
-
-<!-- SHEET PILIH KETERANGAN PENANGANAN -->
-<div class="sheet-bg" id="sheet-penanganan">
-  <div class="sheet-box">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title">Keterangan Jam Kosong</div>
-    <div style="text-align:center;margin-bottom:16px">
-      <span class="kelas-badge" id="penanganan-kelas">—</span>
-    </div>
-    <p style="font-size:13px;color:var(--teks2);font-weight:600;text-align:center;margin-bottom:16px">Pilih keterangan ketidakhadiran guru:</p>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
-      <button onclick="simpanPenanganan('Sakit')" style="padding:14px;background:#fef2f2;color:#dc2626;border:1.5px solid #fecaca;border-radius:12px;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer">🤒 Sakit</button>
-      <button onclick="simpanPenanganan('Izin')" style="padding:14px;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;border-radius:12px;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer">📋 Izin</button>
-      <button onclick="simpanPenanganan('Dinas Luar')" style="padding:14px;background:#fff7ed;color:#c2410c;border:1.5px solid #fed7aa;border-radius:12px;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer">🚗 Dinas Luar (DL)</button>
-      <button onclick="simpanPenanganan('Tanpa Keterangan')" style="padding:14px;background:var(--bg);color:var(--teks2);border:1.5px solid var(--border);border-radius:12px;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer">— Tanpa Keterangan</button>
-    </div>
-    <button class="btn-cancel" onclick="$('sheet-penanganan').classList.remove('aktif')">Batal</button>
-  </div>
 </div>
 
 <!-- LOADING -->
@@ -10895,10 +10935,7 @@ function renderMonitor(){
       }
 
       const kodeDisplay=j.kodeTampil||j.inisial;
-      const isKosong=stSesi==='berlangsung'&&!absMasuk&&!ditangani&&!guruLamaHijau&&!kcData;
-      const clickAttr=isKosong?`onclick="tapSelMerah('${kl}','${si.s}','${si.e}')" title="Tap untuk tandai sudah ditangani"`:'';
-
-      html+=`<td><div class="${cls}" ${clickAttr}>
+      html+=`<td><div class="${cls}">
         <div class="cn">${kodeDisplay}</div>
         ${note}
       </div></td>`;
@@ -10910,43 +10947,29 @@ function renderMonitor(){
   $('mon-tbl').innerHTML=html;
 }
 
-// ── TAP SEL MERAH ──
-// ── TAP SEL MERAH — pilih keterangan ──
-let penangananTarget = null;
-function tapSelMerah(kelas,jamMulai,jamSelesai){
-  if(!guruLogin) return;
-  const hr=hariIni();
-  const hp=(guruLogin.piket||'').split(',').map(h=>h.trim());
-  if(!hp.includes(hr)){ alert('Anda bukan guru piket hari ini.'); return; }
-  penangananTarget={kelas,jamMulai,jamSelesai};
-  $('sheet-penanganan').classList.add('aktif');
-  $('penanganan-kelas').textContent=`Kelas ${kelas} · ${jamMulai}–${jamSelesai}`;
-}
-async function simpanPenanganan(keterangan){
-  $('sheet-penanganan').classList.remove('aktif');
-  if(!penangananTarget) return;
-  ld('Menyimpan...');
-  const tgl=tglStr();
-  const {kelas,jamMulai,jamSelesai}=penangananTarget;
-  const payload={action:'inputPenanganan',tanggal:tgl,kelas,jamMulai,jamSelesai,guruPiket:guruLogin.inisial,keterangan};
-  let id='PN-'+Date.now();
-  try{ const r=await fetch(CFG.APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)}); const d=await r.json(); if(d.id)id=d.id; }catch(e){}
-  dPenanganan.push({id,tanggal:tgl,kelas,jamMulai,jamSelesai,guruPiket:guruLogin.inisial,keterangan,status:'AKTIF'});
-  penangananTarget=null;
-  ul(); renderMonitor();
-}
+// ── INPUT KEGIATAN (UNIFIED) ──
+let kgiPinValInt='', guruPiketLogin=null, kgiBerlakuUntuk='semua', kgiKetVal='', kgiKetManual='';
 
-// ── INPUT KEGIATAN ──
-let kgiPinValInt='';
 function bukaKgi(){
+  if(guruLogin){
+    const hr=hariIni();
+    const hp=(guruLogin.piket||'').split(',').map(h=>h.trim());
+    if(hp.includes(hr)){
+      guruPiketLogin=guruLogin;
+      $('kgi-piket-info').textContent='✓ '+guruLogin.nama+' — Piket '+hr;
+      $('kgi-step-pin').style.display='none';
+      $('kgi-step-form').style.display='block';
+      initKgiForm(); $('sheet-kgi').classList.add('aktif'); return;
+    }
+  }
   kgiPinValInt=''; $('kgi-pin-disp').textContent='____'; $('kgi-pin-disp').classList.remove('err');
   $('kgi-step-pin').style.display='block'; $('kgi-step-form').style.display='none';
-  $('kgi-tgl').value=tglISO(); $('sheet-kgi').classList.add('aktif');
+  $('sheet-kgi').classList.add('aktif');
 }
-function tutupSheetKgi(){ $('sheet-kgi').classList.remove('aktif'); guruPiketLogin=null; kgiPinValInt=''; }
+function tutupSheetKgi(){ $('sheet-kgi').classList.remove('aktif'); guruPiketLogin=null; kgiPinValInt=''; kgiKetVal=''; kgiKetManual=''; }
 function npKgi(v){
-  if(v==='H'){kgiPinValInt=kgiPinValInt.slice(0,-1);}
-  else if(v==='OK'){konfKgiPin();return;}
+  if(v==='H') kgiPinValInt=kgiPinValInt.slice(0,-1);
+  else if(v==='OK'){ konfKgiPin(); return; }
   else if(kgiPinValInt.length<6) kgiPinValInt+=v;
   const d=$('kgi-pin-disp');
   d.textContent=kgiPinValInt?'●'.repeat(kgiPinValInt.length)+'_'.repeat(Math.max(0,4-kgiPinValInt.length)):'____';
@@ -10955,36 +10978,105 @@ function npKgi(v){
 function konfKgiPin(){
   const g=dGuru.find(x=>x.pin===kgiPinValInt);
   if(!g){ const d=$('kgi-pin-disp');d.classList.add('err');d.textContent='PIN SALAH ✗';setTimeout(()=>{kgiPinValInt='';$('kgi-pin-disp').textContent='____';$('kgi-pin-disp').classList.remove('err');},1200);return; }
-  const hr=hariIni();
-  const hp=(g.piket||'').split(',').map(h=>h.trim());
+  const hr=hariIni(), hp=(g.piket||'').split(',').map(h=>h.trim());
   if(!hp.includes(hr)){ const d=$('kgi-pin-disp');d.classList.add('err');d.textContent='BUKAN PIKET';setTimeout(()=>{kgiPinValInt='';$('kgi-pin-disp').textContent='____';$('kgi-pin-disp').classList.remove('err');},1500);return; }
   guruPiketLogin=g; $('kgi-piket-info').textContent='✓ '+g.nama+' — Piket '+hr;
   $('kgi-step-pin').style.display='none'; $('kgi-step-form').style.display='block';
+  initKgiForm();
+}
+function initKgiForm(){
+  $('kgi-tgl').value=tglISO();
+  setBerlakuUntuk('semua');
+  kgiKetVal=''; kgiKetManual='';
+  $('kgi-ket-preview').textContent='—';
+  $('kgi-ket-manual').style.display='none';
+  $('kgi-ket-manual').value='';
+  document.querySelectorAll('.ket-opt').forEach(b=>b.classList.remove('aktif'));
+  updateJamDropdown();
   renderKgiAktif();
 }
-function renderKgiAktif(){
-  const tgl=tglStr();
-  const aktif=dInsidental.filter(k=>k.tanggal===tgl&&k.status!=='BATAL');
-  if(!aktif.length){$('kgi-aktif-list').innerHTML='<div style="font-size:12px;color:var(--teks3);padding:8px 0;text-align:center">Belum ada kegiatan insidental hari ini</div>';return;}
-  $('kgi-aktif-list').innerHTML=aktif.map(k=>`
-    <div class="kgi-aktif-item">
-      <div class="kgi-info"><div class="kgi-judul">${k.keterangan}</div><div class="kgi-det">${k.jamMulai}–${k.jamSelesai} · ${k.guruPiket}</div></div>
-      <button class="btn-batal-kgi" onclick="batalKgi('${k.id}')">Batalkan</button>
-    </div>`).join('');
+function setBerlakuUntuk(mode){
+  kgiBerlakuUntuk=mode;
+  const bs=$('btn-semua-guru'), bt=$('btn-guru-tertentu');
+  if(mode==='semua'){
+    bs.style.cssText='flex:1;padding:10px;font-size:12px;margin:0;background:var(--g4);color:#fff;border:1.5px solid var(--g4)';
+    bt.style.cssText='flex:1;padding:10px;font-size:12px;margin:0;background:var(--bg);color:var(--teks2);border:1.5px solid var(--border)';
+    $('kgi-guru-wrap').style.display='none';
+  } else {
+    bt.style.cssText='flex:1;padding:10px;font-size:12px;margin:0;background:var(--ungu);color:#fff;border:1.5px solid var(--ungu)';
+    bs.style.cssText='flex:1;padding:10px;font-size:12px;margin:0;background:var(--bg);color:var(--teks2);border:1.5px solid var(--border)';
+    $('kgi-guru-wrap').style.display='block';
+    const sg=$('kgi-guru');
+    sg.innerHTML='<option value="">-- Pilih Guru --</option>';
+    dGuru.forEach(g=>{const o=document.createElement('option');o.value=g.nama;o.textContent=g.nama;sg.appendChild(o);});
+  }
+  updateJamDropdown();
 }
+function updateJamDropdown(){
+  const hr=hariIni();
+  const namaGuru=kgiBerlakuUntuk==='tertentu'?$('kgi-guru').value:'';
+  let jadwalHari=dJadwal.filter(j=>j.hari===hr);
+  if(namaGuru) jadwalHari=jadwalHari.filter(j=>j.namaGuru===namaGuru);
+  const mulaiSet=new Set(), selesaiSet=new Set();
+  jadwalHari.forEach(j=>{ mulaiSet.add(j.jamMulai); selesaiSet.add(j.jamSelesai); });
+  const sm=$('kgi-mulai'), ss=$('kgi-selesai');
+  sm.innerHTML='<option value="">-- Pilih --</option>';
+  ss.innerHTML='<option value="">-- Pilih --</option>';
+  [...mulaiSet].sort().forEach(j=>{const o=document.createElement('option');o.value=j;o.textContent=j;sm.appendChild(o);});
+  [...selesaiSet].sort().forEach(j=>{const o=document.createElement('option');o.value=j;o.textContent=j;ss.appendChild(o);});
+}
+function updateJamSelesai(){
+  const mulai=$('kgi-mulai').value, hr=hariIni();
+  const namaGuru=kgiBerlakuUntuk==='tertentu'?$('kgi-guru').value:'';
+  let j=dJadwal.filter(x=>x.hari===hr&&x.jamMulai===mulai);
+  if(namaGuru) j=j.filter(x=>x.namaGuru===namaGuru);
+  if(j.length>0) $('kgi-selesai').value=j[0].jamSelesai;
+}
+function pilihKet(ket){
+  document.querySelectorAll('.ket-opt').forEach(b=>b.classList.remove('aktif'));
+  if(ket==='lainnya'){
+    $('btn-lainnya').classList.add('aktif');
+    $('kgi-ket-manual').style.display='block';
+    $('kgi-ket-manual').focus();
+    kgiKetVal='lainnya';
+    $('kgi-ket-preview').textContent=kgiKetManual||'ketik di atas...';
+  } else {
+    kgiKetVal=ket; kgiKetManual='';
+    $('kgi-ket-manual').style.display='none';
+    $('kgi-ket-preview').textContent=ket;
+    document.querySelectorAll('.ket-opt').forEach(b=>{ if(b.textContent.trim()===ket) b.classList.add('aktif'); });
+  }
+}
+document.addEventListener('input',e=>{ if(e.target.id==='kgi-ket-manual'){ kgiKetManual=e.target.value; $('kgi-ket-preview').textContent=kgiKetManual||'ketik di atas...'; }});
 async function simpanKgi(){
   if(!guruPiketLogin) return;
-  const tgl=$('kgi-tgl').value, mulai=$('kgi-mulai').value, selesai=$('kgi-selesai').value, ket=$('kgi-ket').value.trim();
-  if(!tgl||!mulai||!selesai||!ket){alert('Semua kolom harus diisi!');return;}
-  if(mulai>=selesai){alert('Jam selesai harus lebih dari jam mulai!');return;}
+  const tgl=$('kgi-tgl').value, mulai=$('kgi-mulai').value, selesai=$('kgi-selesai').value;
+  const ket=kgiKetVal==='lainnya'?kgiKetManual:kgiKetVal;
+  const namaGuru=kgiBerlakuUntuk==='tertentu'?$('kgi-guru').value:'';
+  if(!mulai||!selesai){alert('Pilih jam mulai dan jam selesai!');return;}
+  if(!ket||!ket.trim()){alert('Pilih atau isi keterangan!');return;}
+  if(kgiBerlakuUntuk==='tertentu'&&!namaGuru){alert('Pilih nama guru!');return;}
   ld('Menyimpan kegiatan...');
   const tglFmt=tgl.split('-').reverse().join('/');
-  const payload={action:'inputKegiatan',tanggal:tglFmt,jamMulai:mulai,jamSelesai:selesai,keterangan:ket,guruPiket:guruPiketLogin.inisial};
+  const payload={action:'inputKegiatan',tanggal:tglFmt,jamMulai:mulai,jamSelesai:selesai,keterangan:ket,guruPiket:guruPiketLogin.inisial,berlakuUntuk:kgiBerlakuUntuk,namaGuru};
   let id='KI-'+Date.now();
   try{ const r=await fetch(CFG.APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)}); const d=await r.json(); if(d.id)id=d.id; }catch(e){}
-  dInsidental.push({id,tanggal:tglFmt,jamMulai:mulai,jamSelesai:selesai,keterangan:ket,guruPiket:guruPiketLogin.inisial,status:'AKTIF'});
-  ul(); $('kgi-mulai').value=''; $('kgi-selesai').value=''; $('kgi-ket').value='';
+  dInsidental.push({id,tanggal:tglFmt,jamMulai:mulai,jamSelesai:selesai,keterangan:ket,guruPiket:guruPiketLogin.inisial,berlakuUntuk:kgiBerlakuUntuk,namaGuru,status:'AKTIF'});
+  ul(); kgiKetVal=''; kgiKetManual='';
+  $('kgi-ket-preview').textContent='—'; $('kgi-ket-manual').style.display='none'; $('kgi-ket-manual').value='';
+  document.querySelectorAll('.ket-opt').forEach(b=>b.classList.remove('aktif'));
+  $('kgi-mulai').value=''; $('kgi-selesai').value='';
   renderKgiAktif(); renderMonitor(); alert('✅ Kegiatan berhasil disimpan!');
+}
+function renderKgiAktif(){
+  const tgl=tglStr(), aktif=dInsidental.filter(k=>k.tanggal===tgl&&k.status!=='BATAL');
+  if(!aktif.length){$('kgi-aktif-list').innerHTML='<div style="font-size:12px;color:var(--teks3);padding:8px 0;text-align:center">Belum ada kegiatan hari ini</div>';return;}
+  $('kgi-aktif-list').innerHTML=aktif.map(k=>`
+    <div class="kgi-aktif-item">
+      <div class="kgi-info"><div class="kgi-judul">${k.keterangan}</div>
+      <div class="kgi-det">${k.jamMulai}–${k.jamSelesai} · ${k.berlakuUntuk==='semua'?'Semua Guru':k.namaGuru||'—'} · ${k.guruPiket}</div></div>
+      <button class="btn-batal-kgi" onclick="batalKgi('${k.id}')">Batalkan</button>
+    </div>`).join('');
 }
 async function batalKgi(id){
   if(!confirm('Batalkan kegiatan ini?')) return;
@@ -10993,6 +11085,7 @@ async function batalKgi(id){
   const idx=dInsidental.findIndex(k=>k.id===id); if(idx>=0) dInsidental[idx].status='BATAL';
   ul(); renderKgiAktif(); renderMonitor();
 }
+
 
 // ── REKAP ──
 function setRMode(mode,btn){
