@@ -10500,33 +10500,55 @@ function getDeviceId(){
 // ── REGISTRASI TOKEN ──
 async function cekToken(){
   const token=localStorage.getItem('agenda_token');
-  if(!token){ tampilReg(); return; }
-
-  // Coba ambil data guru yang sudah disimpan lokal dulu
   const guruCached=localStorage.getItem('agenda_guru');
-  if(guruCached){
-    try{ guruLogin=JSON.parse(guruCached); }catch(e){}
+
+  // Kalau ada token DAN ada data guru tersimpan — langsung masuk tanpa cek server
+  if(token && guruCached){
+    try{
+      guruLogin=JSON.parse(guruCached);
+      tampilApp();
+      // Verifikasi di background tanpa blokir tampilan
+      fetch(CFG.APPS_SCRIPT_URL+`?action=cekToken&token=${encodeURIComponent(token)}`)
+        .then(r=>r.json())
+        .then(d=>{
+          if(d.ok&&d.guru){
+            guruLogin=d.guru;
+            localStorage.setItem('agenda_guru',JSON.stringify(d.guru));
+            // Update nama di header
+            if(guruLogin) $('scan-sapa').textContent=`Selamat datang, ${guruLogin.nama.split(' ')[0]}! Scan QR kelas untuk absen.`;
+          } else if(!d.ok){
+            // Token tidak valid — hapus dan minta registrasi ulang
+            localStorage.removeItem('agenda_token');
+            localStorage.removeItem('agenda_guru');
+            tampilReg();
+          }
+        }).catch(()=>{}); // gagal verifikasi = tetap pakai cache
+      return;
+    }catch(e){}
   }
 
-  try{
-    const r=await fetch(CFG.APPS_SCRIPT_URL+`?action=cekToken&token=${encodeURIComponent(token)}`);
-    const d=await r.json();
-    if(d.ok&&d.guru){
-      guruLogin=d.guru;
-      // Simpan data guru ke localStorage untuk offline
-      localStorage.setItem('agenda_guru', JSON.stringify(d.guru));
+  // Kalau ada token tapi belum ada cache guru — cek ke server
+  if(token && !guruCached){
+    try{
+      const r=await fetch(CFG.APPS_SCRIPT_URL+`?action=cekToken&token=${encodeURIComponent(token)}`);
+      const d=await r.json();
+      if(d.ok&&d.guru){
+        guruLogin=d.guru;
+        localStorage.setItem('agenda_guru',JSON.stringify(d.guru));
+        tampilApp();
+      } else {
+        localStorage.removeItem('agenda_token');
+        tampilReg();
+      }
+    }catch(e){
+      // Offline, tidak bisa verifikasi — tampil app saja
       tampilApp();
-    } else {
-      // Token tidak valid — hapus dan minta registrasi ulang
-      localStorage.removeItem('agenda_token');
-      localStorage.removeItem('agenda_guru');
-      tampilReg();
     }
-  }catch(e){
-    // Offline — pakai data guru yang sudah tersimpan
-    if(guruLogin){ tampilApp(); }
-    else{ tampilApp(); } // tetap buka app walau guru null
+    return;
   }
+
+  // Tidak ada token sama sekali — tampil registrasi
+  tampilReg();
 }
 
 async function doRegistrasi(){
@@ -10598,6 +10620,14 @@ async function loadData(){
     dGuru=d.guru||DATA_GURU_LOKAL; dJadwal=d.jadwal||DATA_JADWAL_LOKAL;
     dAbsensi=d.absensi||[]; dIstirahat=d.istirahat||DATA_ISTIRAHAT_LOKAL;
     dRutin=d.rutin||DATA_RUTIN_LOKAL; dInsidental=d.insidental||[]; dPenanganan=d.penanganan||[];
+    // Sinkronisasi status bel otomatis dari sheet
+    if(typeof d.belOtomatis !== 'undefined'){
+      belOtomatisStatus = d.belOtomatis;
+      const tog = $('toggle-bel-otomatis');
+      const lbl = $('bel-status-label');
+      if(tog) tog.checked = belOtomatisStatus;
+      if(lbl){ lbl.textContent = belOtomatisStatus?'Aktif ✓':'Nonaktif ✗'; lbl.style.color = belOtomatisStatus?'var(--g4)':'var(--merah)'; }
+    }
   }catch(e){
     dGuru=DATA_GURU_LOKAL; dJadwal=DATA_JADWAL_LOKAL;
     dIstirahat=DATA_ISTIRAHAT_LOKAL; dRutin=DATA_RUTIN_LOKAL;
