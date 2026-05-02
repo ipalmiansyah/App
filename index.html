@@ -10125,6 +10125,11 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .ket-opt:active,.ket-opt.aktif{background:var(--ungu-bg);color:var(--ungu);border-color:var(--ungu);font-weight:800;}
 .ld-wrap{display:none;position:fixed;inset:0;z-index:400;background:rgba(255,255,255,0.9);backdrop-filter:blur(3px);flex-direction:column;align-items:center;justify-content:center;gap:14px;}
 .ld-wrap.aktif{display:flex;}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);z-index:500;background:#1e293b;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;white-space:nowrap;opacity:0;transition:all 0.3s;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:#15803d;}
+.toast.err{background:#dc2626;}
+.toast.warn{background:#d97706;}
 .ld-spin{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--g4);border-radius:50%;animation:ls 0.7s linear infinite;}
 @keyframes ls{to{transform:rotate(360deg)}}
 .ld-wrap p{font-size:14px;font-weight:700;color:var(--teks2);}
@@ -10447,6 +10452,8 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 
 <!-- LOADING -->
 <div class="ld-wrap" id="ld"><div class="ld-spin"></div><p id="ld-txt">Memproses...</p></div>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
 <script>
 // ══════════════════════════════════════════════════════
@@ -10489,6 +10496,16 @@ const hariIni = () => new Date().toLocaleDateString('id-ID',{weekday:'long'});
 const tglStr  = (d=new Date()) => d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'});
 const tglISO  = (d=new Date()) => d.toISOString().split('T')[0];
 const inisial = n => n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,3);
+
+let toastTimer=null;
+function toast(msg, type='ok', dur=3000){
+  const el=$('toast');
+  if(!el) return;
+  if(toastTimer) clearTimeout(toastTimer);
+  el.textContent=msg;
+  el.className='toast show '+(type||'ok');
+  toastTimer=setTimeout(()=>{ el.className='toast'; },dur);
+}
 
 function haversine(a,b,c,d){
   const R=6371000,da=(c-a)*Math.PI/180,db=(d-b)*Math.PI/180;
@@ -10667,6 +10684,15 @@ async function loadData(){
     dGuru=d.guru||DATA_GURU_LOKAL; dJadwal=d.jadwal||DATA_JADWAL_LOKAL;
     dAbsensi=d.absensi||[]; dIstirahat=d.istirahat||DATA_ISTIRAHAT_LOKAL;
     dRutin=d.rutin||DATA_RUTIN_LOKAL; dInsidental=d.insidental||[]; dPenanganan=d.penanganan||[];
+    // Merge riwayat lokal hari ini supaya tidak hilang sebelum server sync
+    try{
+      const tgl=tglStr();
+      const lokal=JSON.parse(localStorage.getItem('agenda_riwayat')||'[]').filter(r=>r.tanggal===tgl);
+      lokal.forEach(r=>{
+        if(!dAbsensi.find(a=>a.kelas===r.kelas&&a.guru===r.guru&&a.mode===r.mode&&a.tanggal===r.tanggal))
+          dAbsensi.push(r);
+      });
+    }catch(e){}
     // Sinkronisasi status bel otomatis dari sheet
     if(typeof d.belOtomatis !== 'undefined'){
       belOtomatisStatus = d.belOtomatis;
@@ -10701,7 +10727,7 @@ async function bukaKam(){
     try{ stream=await navigator.mediaDevices.getUserMedia(c); dbg('Kamera OK: '+JSON.stringify(c.video)); break; }
     catch(e){ dbg('Gagal, coba berikutnya...'); }
   }
-  if(!stream){ alert('Kamera tidak bisa diakses.\n1. Pastikan buka lewat HTTPS\n2. Izinkan kamera di browser'); tutupKam(); return; }
+  if(!stream){ toast('Kamera tidak bisa diakses. Pastikan HTTPS & izinkan kamera.','err',4000); tutupKam(); return; }
   camStream=stream;
   const vid=$('vid');
   vid.srcObject=stream;
@@ -10753,7 +10779,7 @@ function prosesQR(data){
     dbg('❌ QR tidak dikenal: '+data.substring(0,30));
     // Tampilkan pesan sebentar lalu scan lagi
     setTimeout(()=>{
-      alert('QR Code tidak dikenal.\nHarap scan QR kelas yang benar.');
+      toast('QR tidak dikenal. Scan QR kelas yang benar.','err');
       tutupKam();
     },200);
     return;
@@ -10768,7 +10794,7 @@ function dbg(msg){ const el=$('dbg-bar'); if(el) el.textContent=msg; }
 
 // ── SHEET ABSEN ──
 function bukaSheetAbsen(kelas){
-  if(!guruLogin){ alert('HP ini belum terdaftar. Hubungi admin untuk mendapatkan token.'); return; }
+  if(!guruLogin){ toast('HP belum terdaftar. Hubungi admin.','err'); return; }
   $('absen-kelas').textContent='Kelas '+kelas;
   $('absen-guru-info').textContent=guruLogin.nama+' — '+guruLogin.inisial;
   setMode('masuk'); $('sheet-absen').classList.add('aktif');
@@ -10777,7 +10803,7 @@ function setMode(m){ modeScan=m; $('mb-masuk').className='mode-btn'+(m==='masuk'
 
 async function konfirmasiAbsen(){
   $('sheet-absen').classList.remove('aktif');
-  if(!guruLogin){ alert('Data guru tidak ditemukan, silakan restart app.'); return; }
+  if(!guruLogin){ toast('Data guru tidak ditemukan, restart app.','err'); return; }
   ld('Menyimpan absensi...');
   const d=new Date();
   const jam=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
@@ -10809,7 +10835,17 @@ async function konfirmasiAbsen(){
   try{ await fetch(CFG.APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)}); }catch(e){ console.log('Absen fetch error:',e); }
 
   const sudahAda=dAbsensi.find(a=>a.kelas===kelasScan&&a.guru===guruLogin.nama&&a.mode===modeScan&&a.tanggal===tgl);
-  if(!sudahAda) dAbsensi.push({...payload});
+  if(!sudahAda){
+    dAbsensi.push({...payload});
+    // Simpan riwayat hari ini ke localStorage
+    try{
+      const riwayatLokal=JSON.parse(localStorage.getItem('agenda_riwayat')||'[]');
+      riwayatLokal.unshift({...payload});
+      // Simpan max 50 entri, hanya hari ini
+      const filtered=riwayatLokal.filter(r=>r.tanggal===tgl).slice(0,50);
+      localStorage.setItem('agenda_riwayat', JSON.stringify(filtered));
+    }catch(e){}
+  }
 
   ul(); showSuk(guruLogin.nama,kelasScan,modeScan,jam,keluarCepat); renderRiwayat();
   if($('pg-monitor')&&$('pg-monitor').classList.contains('aktif')) renderMonitor();
@@ -11070,9 +11106,9 @@ async function simpanKgi(){
   const tgl=$('kgi-tgl').value, mulai=$('kgi-mulai').value, selesai=$('kgi-selesai').value;
   const ket=kgiKetVal==='lainnya'?kgiKetManual:kgiKetVal;
   const namaGuru=kgiBerlakuUntuk==='tertentu'?$('kgi-guru').value:'';
-  if(!mulai||!selesai){alert('Pilih jam mulai dan jam selesai!');return;}
-  if(!ket||!ket.trim()){alert('Pilih atau isi keterangan!');return;}
-  if(kgiBerlakuUntuk==='tertentu'&&!namaGuru){alert('Pilih nama guru!');return;}
+  if(!mulai||!selesai){toast('Pilih jam mulai dan jam selesai!','warn'); return;}
+  if(!ket||!ket.trim()){toast('Pilih atau isi keterangan!','warn'); return;}
+  if(kgiBerlakuUntuk==='tertentu'&&!namaGuru){toast('Pilih nama guru!','warn'); return;}
   ld('Menyimpan kegiatan...');
   const tglFmt=tgl.split('-').reverse().join('/');
   const payload={action:'inputKegiatan',tanggal:tglFmt,jamMulai:mulai,jamSelesai:selesai,keterangan:ket,guruPiket:guruPiketLogin.inisial,berlakuUntuk:kgiBerlakuUntuk,namaGuru};
@@ -11083,7 +11119,7 @@ async function simpanKgi(){
   $('kgi-ket-preview').textContent='—'; $('kgi-ket-manual').style.display='none'; $('kgi-ket-manual').value='';
   document.querySelectorAll('.ket-opt').forEach(b=>b.classList.remove('aktif'));
   $('kgi-mulai').value=''; $('kgi-selesai').value='';
-  renderKgiAktif(); renderMonitor(); alert('✅ Kegiatan berhasil disimpan!');
+  renderKgiAktif(); renderMonitor(); toast('✅ Kegiatan berhasil disimpan!','ok');
 }
 function renderKgiAktif(){
   const tgl=tglStr(), aktif=dInsidental.filter(k=>k.tanggal===tgl&&k.status!=='BATAL');
@@ -11324,16 +11360,16 @@ function initBelMenu(){
 
 async function playBelManual(){
   const hr=hariIni();
-  if(!guruLogin){ alert('HP belum terdaftar!'); return; }
+  if(!guruLogin){ toast('HP belum terdaftar!','err'); return; }
   const hp=(guruLogin.piket||'').split(',').map(h=>h.trim());
-  if(!hp.includes(hr)){ alert('HP ini bukan piket hari '+hr+'!'); return; }
+  if(!hp.includes(hr)){ toast('Anda Tidak Piket Hari Ini','err'); return; }
   const suara=$('sel-bel-suara').value;
   ld('Mengirim perintah bel...');
   try{
     await fetch(CFG.APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'triggerBel',suara,guruPiket:guruLogin.inisial})});
     ul();
-    alert('✅ Bel dikirim ke monitor!\n'+suara.replace('.mp3',''));
-  }catch(e){ ul(); alert('Gagal kirim: '+e.message); }
+    toast('✅ Bel dikirim ke monitor!','ok');
+  }catch(e){ ul(); toast('Gagal kirim bel: '+e.message,'err'); }
 }
 
 async function setBelOtomatis(aktif){
@@ -11344,6 +11380,13 @@ async function setBelOtomatis(aktif){
 }
 
 // ── INIT ──
+// Bersihkan riwayat lokal yang bukan hari ini
+try{
+  const tglHariIni=tglStr();
+  const rw=JSON.parse(localStorage.getItem('agenda_riwayat')||'[]');
+  const bersih=rw.filter(r=>r.tanggal===tglHariIni);
+  if(bersih.length!==rw.length) localStorage.setItem('agenda_riwayat',JSON.stringify(bersih));
+}catch(e){}
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 cekToken();
 </script>
