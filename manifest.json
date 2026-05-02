@@ -2,8 +2,8 @@
   "name": "Agenda Mengajar Guru",
   "short_name": "Agenda Guru",
   "description": "Sistem Agenda Mengajar Guru SMP Negeri 05 Sarolangun",
-  "start_url": "https://ipalmiansyah.github.io/App-Agenda/",
-  "scope": "https://ipalmiansyah.github.io/App-Agenda/",
+  "start_url": "https://ipalmiansyah.github.io/App/",
+  "scope": "https://ipalmiansyah.github.io/App/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#166534",
@@ -23,5 +23,13 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["education", "productivity"]
+  "categories": ["education", "productivity"],
+  "screenshots": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
 }
