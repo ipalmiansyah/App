@@ -10592,17 +10592,30 @@ async function cekToken(){
 }
 
 async function doRegistrasi(){
-  const token=$('reg-token').value.trim().toUpperCase();
-  if(token.length<4){ $('reg-err').style.display='block'; $('reg-err').textContent='Token minimal 4 karakter!'; return; }
+  const inp=$('reg-token');
+  if(!inp){ console.error('reg-token element tidak ditemukan!'); return; }
+  const token=inp.value.trim().toUpperCase();
+  console.log('[REG] Token:', token, 'Length:', token.length);
+  if(token.length<4){
+    $('reg-err').style.display='block';
+    $('reg-err').textContent='Token minimal 4 karakter!';
+    return;
+  }
+  const errEl=$('reg-err');
+  if(errEl) errEl.style.display='none';
   ld('Memverifikasi token...');
   const deviceId=getDeviceId();
+  console.log('[REG] DeviceId:', deviceId);
+  console.log('[REG] URL:', CFG.APPS_SCRIPT_URL);
   try{
     const r=await fetch(CFG.APPS_SCRIPT_URL,{
       method:'POST',
       headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'aktivasiToken',token,deviceId})
     });
+    console.log('[REG] Status:', r.status);
     const txt=await r.text();
+    console.log('[REG] Response:', txt.substring(0,200));
     let d;
     try{ d=JSON.parse(txt); }catch(e){ throw new Error('Response tidak valid: '+txt.substring(0,100)); }
     ul();
@@ -10610,17 +10623,15 @@ async function doRegistrasi(){
       localStorage.setItem('agenda_token',token);
       localStorage.setItem('agenda_guru',JSON.stringify(d.guru));
       guruLogin=d.guru;
-      $('reg-err').style.display='none';
+      if(errEl) errEl.style.display='none';
       tampilApp();
     } else {
-      $('reg-err').style.display='block';
-      $('reg-err').textContent=d.error||'Token tidak valid atau sudah digunakan HP lain.';
+      if(errEl){ errEl.style.display='block'; errEl.textContent=d.error||'Token tidak valid atau sudah digunakan HP lain.'; }
     }
   }catch(e){
     ul();
-    $('reg-err').style.display='block';
-    $('reg-err').textContent='Error: '+e.message;
-    console.error('Registrasi error:',e);
+    console.error('[REG] Error:', e);
+    if(errEl){ errEl.style.display='block'; errEl.textContent='Gagal: '+e.message; }
   }
 }
 
