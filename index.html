@@ -10749,8 +10749,17 @@ function doFrame(){
 }
 function prosesQR(data){
   scanActive=false; if(scanTimer){clearInterval(scanTimer);scanTimer=null;}
+  if(!data.startsWith('ABSENSI-KELAS-')){
+    dbg('❌ QR tidak dikenal: '+data.substring(0,30));
+    // Tampilkan pesan sebentar lalu scan lagi
+    setTimeout(()=>{
+      alert('QR Code tidak dikenal.\nHarap scan QR kelas yang benar.');
+      tutupKam();
+    },200);
+    return;
+  }
   if(navigator.vibrate) navigator.vibrate([80,40,80]);
-  kelasScan=data.startsWith('ABSENSI-KELAS-')?data.replace('ABSENSI-KELAS-',''):data;
+  kelasScan=data.replace('ABSENSI-KELAS-','');
   setTimeout(()=>{ tutupKamKeep(); bukaSheetAbsen(kelasScan); },300);
 }
 function tutupKam(){ scanActive=false; if(scanTimer){clearInterval(scanTimer);scanTimer=null;} if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;} $('cam-wrap').classList.remove('aktif'); }
@@ -10768,6 +10777,7 @@ function setMode(m){ modeScan=m; $('mb-masuk').className='mode-btn'+(m==='masuk'
 
 async function konfirmasiAbsen(){
   $('sheet-absen').classList.remove('aktif');
+  if(!guruLogin){ alert('Data guru tidak ditemukan, silakan restart app.'); return; }
   ld('Menyimpan absensi...');
   const d=new Date();
   const jam=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
@@ -10775,17 +10785,19 @@ async function konfirmasiAbsen(){
 
   // Cari semua sesi guru di kelas hari ini
   const semuaSesi=dJadwal.filter(j=>j.kelas===kelasScan&&j.namaGuru===guruLogin.nama&&j.hari===hr);
-  const kodeTampil=semuaSesi.length>0?semuaSesi[0].kodeTampil:(guruLogin.inisial||'');
+  const kodeTampil=semuaSesi.length>0?(semuaSesi[0].kodeTampil||guruLogin.inisial||''):(guruLogin.inisial||'');
 
-  // Cek apakah keluar cepat (untuk mode keluar)
+  // Cek apakah keluar cepat
   let keluarCepat=false;
   if(modeScan==='keluar' && semuaSesi.length>0){
-    // Cek sesi yang sedang berlangsung atau baru saja selesai
-    const sesiAktif=semuaSesi.find(s=>{
-      const n=nowMin(), sm=pJam(s.jamMulai), em=pJam(s.jamSelesai);
-      return n>=sm && n<=em+CFG.TOLERANSI;
-    });
-    if(sesiAktif) keluarCepat=isKeluarCepat(jam, sesiAktif.jamSelesai);
+    try{
+      const sesiAktif=semuaSesi.find(s=>{
+        if(!s.jamMulai||!s.jamSelesai) return false;
+        const n=nowMin(), sm=pJam(s.jamMulai), em=pJam(s.jamSelesai);
+        return n>=sm && n<=em+CFG.TOLERANSI;
+      });
+      if(sesiAktif&&sesiAktif.jamSelesai) keluarCepat=isKeluarCepat(jam, sesiAktif.jamSelesai);
+    }catch(e){ console.log('Cek keluar cepat error:',e); }
   }
 
   const payload={
@@ -10794,15 +10806,13 @@ async function konfirmasiAbsen(){
     kodeTampil, keluarCepat
   };
 
-  try{ await fetch(CFG.APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)}); }catch(e){}
+  try{ await fetch(CFG.APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)}); }catch(e){ console.log('Absen fetch error:',e); }
 
-  // Update state lokal — 1 scan berlaku semua sesi guru di kelas hari ini
-  const entry={...payload};
   const sudahAda=dAbsensi.find(a=>a.kelas===kelasScan&&a.guru===guruLogin.nama&&a.mode===modeScan&&a.tanggal===tgl);
-  if(!sudahAda) dAbsensi.push(entry);
+  if(!sudahAda) dAbsensi.push({...payload});
 
   ul(); showSuk(guruLogin.nama,kelasScan,modeScan,jam,keluarCepat); renderRiwayat();
-  if($('pg-monitor').classList.contains('aktif')) renderMonitor();
+  if($('pg-monitor')&&$('pg-monitor').classList.contains('aktif')) renderMonitor();
 }
 
 // ── RIWAYAT ──
