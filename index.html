@@ -10623,16 +10623,20 @@ async function bukaKam(){
 }
 function doFrame(){
   if(!camStream||!scanActive) return;
-  const v=$('vid'),c=$('cnv');
-  if(v.readyState<2||v.videoWidth===0) return;
   try{
+    const v=$('vid'),c=$('cnv');
+    if(!v||!c) return;
+    if(v.readyState<2||!v.videoWidth||!v.videoHeight||v.videoWidth===0||v.videoHeight===0) return;
     c.width=v.videoWidth; c.height=v.videoHeight;
-    const ctx=c.getContext('2d'); ctx.drawImage(v,0,0,c.width,c.height);
+    const ctx=c.getContext('2d');
+    if(!ctx) return;
+    ctx.drawImage(v,0,0,c.width,c.height);
     const img=ctx.getImageData(0,0,c.width,c.height);
+    if(!img||!img.data) return;
     const qr=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'})
            ||jsQR(img.data,img.width,img.height,{inversionAttempts:'onlyInvert'});
     if(qr&&qr.data){ dbg('✅ QR: '+qr.data); prosesQR(qr.data); }
-  }catch(e){ dbg('Err: '+e.message); }
+  }catch(e){ dbg('Frame: '+e.message); }
 }
 function prosesQR(data){
   scanActive=false; if(scanTimer){clearInterval(scanTimer);scanTimer=null;}
