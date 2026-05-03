@@ -9947,8 +9947,9 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .hb{display:flex;align-items:center;gap:8px;}
 .hb-icon{width:32px;height:32px;background:rgba(255,255,255,0.15);border-radius:9px;display:flex;align-items:center;justify-content:center;}
 .hb-icon svg{width:18px;height:18px;}
-.hb-text h1{font-size:13px;font-weight:900;color:#fff;line-height:1.1;}
-.hb-text p{font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;}
+.hb-text h1{font-size:13px;font-weight:900;color:#fff;line-height:1.1;user-select:none;-webkit-user-select:none;}
+.hb-text p{font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;user-select:none;-webkit-user-select:none;}
+.hdr{user-select:none;-webkit-user-select:none;}
 .clk{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--g6);}
 .clk-tgl{font-size:10px;color:rgba(255,255,255,0.5);font-weight:600;}
 .gps-strip{padding:5px 14px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px;flex-shrink:0;}
@@ -10480,8 +10481,33 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
       <div class="sec-title">📱 Token Registrasi HP Guru</div>
       <div id="admin-guru-list" style="margin-bottom:12px"></div>
 
-      <!-- Setting -->
-      <div class="sec-title" style="margin-top:12px">⚙️ Setting Sistem</div>
+      <!-- Setting Sekolah -->
+      <div class="sec-title" style="margin-top:12px">🏫 Setting Sekolah</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+        <div class="form-group" style="margin:0">
+          <label>Kepala Sekolah</label>
+          <input type="text" id="set-kepsek" placeholder="Nama Kepsek" style="width:100%">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>NIP Kepsek</label>
+          <input type="text" id="set-nip-kepsek" placeholder="NIP" style="width:100%">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Wakil Kurikulum</label>
+          <input type="text" id="set-wakasek" placeholder="Nama Wakasek" style="width:100%">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>NIP Wakasek</label>
+          <input type="text" id="set-nip-wakasek" placeholder="NIP" style="width:100%">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Tahun Ajaran</label>
+          <input type="text" id="set-tahun" placeholder="2025/2026" style="width:100%">
+        </div>
+        <button onclick="simpanSetting()" style="width:100%;padding:12px;background:var(--g4);color:#fff;border:none;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:800;cursor:pointer">💾 Simpan Setting</button>
+      </div>
+
+      <!-- Setting Sistem -->
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px">
           <span style="font-size:13px;font-weight:700;color:var(--teks2)">Password Admin</span>
@@ -10535,6 +10561,14 @@ let gpsOK = false, camStream = null, scanActive = false, scanTimer = null;
 let kelasScan = null, modeScan = 'masuk';
 let kgiPinVal = '';
 let dGuru=[], dJadwal=[], dAbsensi=[], dIstirahat=[], dRutin=[], dInsidental=[], dPenanganan=[];
+let dSetting={
+  nama_kepsek:'Sukardiman, M.Pd.',
+  nip_kepsek:'197512102003121004',
+  nama_wakasek:'Ratmi Winasih, S.Pt',
+  nip_wakasek:'197910112007012018',
+  nama_sekolah:'SMP Negeri 05 Sarolangun',
+  tahun_ajaran:'2025/2026'
+};
 let rekapMode='minggu', mingguOfs=0, bulanOfs=0;
 
 // UTILS
@@ -10735,6 +10769,7 @@ async function loadData(){
     dGuru=d.guru||DATA_GURU_LOKAL; dJadwal=d.jadwal||DATA_JADWAL_LOKAL;
     dAbsensi=d.absensi||[]; dIstirahat=d.istirahat||DATA_ISTIRAHAT_LOKAL;
     dRutin=d.rutin||DATA_RUTIN_LOKAL; dInsidental=d.insidental||[]; dPenanganan=d.penanganan||[];
+    if(d.setting) Object.assign(dSetting, d.setting);
     // Merge riwayat lokal hari ini supaya tidak hilang sebelum server sync
     try{
       const tgl=tglStr();
@@ -11442,7 +11477,7 @@ function ketukSekolah(){
     bukaAdmin();
     return;
   }
-  ketukTimer=setTimeout(()=>{ ketukCount=0; },800);
+  ketukTimer=setTimeout(()=>{ ketukCount=0; },400);
 }
 
 // Pasang listener langsung ke element setelah DOM siap
@@ -11480,12 +11515,36 @@ function cekAdminPass(){
     $('admin-step-pass').style.display='none';
     $('admin-step-menu').style.display='block';
     renderAdminGuruList();
+    // Isi form setting dari data sheet
+    $('set-kepsek').value   = dSetting.nama_kepsek||'';
+    $('set-nip-kepsek').value = dSetting.nip_kepsek||'';
+    $('set-wakasek').value  = dSetting.nama_wakasek||'';
+    $('set-nip-wakasek').value = dSetting.nip_wakasek||'';
+    $('set-tahun').value    = dSetting.tahun_ajaran||'';
   } else {
     $('admin-pass-err').style.display='block';
     $('admin-pass-input').value='';
     $('admin-pass-input').focus();
     setTimeout(()=>$('admin-pass-err').style.display='none',2000);
   }
+}
+
+async function simpanSetting(){
+  const setting={
+    nama_kepsek:  $('set-kepsek').value.trim(),
+    nip_kepsek:   $('set-nip-kepsek').value.trim(),
+    nama_wakasek: $('set-wakasek').value.trim(),
+    nip_wakasek:  $('set-nip-wakasek').value.trim(),
+    nama_sekolah: dSetting.nama_sekolah,
+    tahun_ajaran: $('set-tahun').value.trim(),
+  };
+  ld('Menyimpan setting...');
+  try{
+    await fetch(CFG.APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveSetting',setting})});
+    Object.assign(dSetting, setting);
+    ul();
+    toast('✅ Setting berhasil disimpan!','ok');
+  }catch(e){ ul(); toast('Gagal simpan setting','err'); }
 }
 
 function renderAdminGuruList(){
