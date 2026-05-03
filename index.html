@@ -11434,14 +11434,26 @@ async function setBelOtomatis(aktif){
 let ketukCount=0, ketukTimer=null;
 function ketukSekolah(){
   ketukCount++;
+  console.log('[ADMIN] Ketuk ke-'+ketukCount);
   if(ketukTimer) clearTimeout(ketukTimer);
   if(ketukCount>=3){
     ketukCount=0;
+    console.log('[ADMIN] 3x ketuk — buka admin');
     bukaAdmin();
     return;
   }
-  ketukTimer=setTimeout(()=>{ ketukCount=0; },600);
+  ketukTimer=setTimeout(()=>{ ketukCount=0; },800);
 }
+
+// Pasang listener langsung ke element setelah DOM siap
+document.addEventListener('DOMContentLoaded',()=>{
+  const el=document.getElementById('hb-sekolah');
+  if(el){
+    el.style.cursor='pointer';
+    el.addEventListener('click', ketukSekolah);
+    console.log('[ADMIN] Listener terpasang di hb-sekolah');
+  }
+});
 
 function bukaAdmin(){
   $('admin-pass-input').value='';
