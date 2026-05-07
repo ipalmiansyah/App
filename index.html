@@ -10144,8 +10144,8 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 /* TATA TERTIB */
 .btn-tt-tab{flex:1;padding:8px 4px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--teks2);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
 .btn-tt-tab.aktif{background:var(--g4);color:#fff;border-color:var(--g4);}
-.tt-sub{display:none;flex-direction:column;flex:1;overflow:auto;}
-.tt-sub.aktif{display:flex;}
+.tt-sub{display:none !important;flex-direction:column;flex:1;overflow:auto;}
+.tt-sub.aktif{display:flex !important;}
 .form-card{background:var(--card);border-radius:14px;padding:16px;margin:0 16px;display:flex;flex-direction:column;gap:12px;}
 .form-row{display:flex;flex-direction:column;gap:4px;}
 .form-row label{font-size:11px;font-weight:700;color:var(--teks3);text-transform:uppercase;}
@@ -10384,7 +10384,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
               <option value="Wakil Kepsek">Wakil Kepsek</option>
             </select>
           </div>
-          <button class="btn-primary" onclick="ttSubmit()" id="tt-btn-submit">Simpan Pelanggaran</button>
+          <button class="btn-primary" onclick="ttSubmit()" id="tt-btn-submit">Submit</button>
           <div id="tt-submit-msg" style="display:none;margin-top:8px;text-align:center;font-size:12px;"></div>
         </div>
       </div>
@@ -10401,11 +10401,14 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 
       <!-- ── REKAP INDIVIDU ── -->
       <div class="tt-sub" id="tt-individu-sub">
-        <div style="padding:0 16px 8px;display:flex;gap:8px;">
-          <input type="text" id="tt-cari-siswa" placeholder="Cari nama siswa..." style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;background:var(--card);color:var(--teks1);" oninput="ttCariSiswa()">
+        <div style="padding:0 16px 8px;display:flex;flex-direction:column;gap:8px;">
+          <select id="tt-ind-kelas-sel" onchange="ttIndLoadSiswa()" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;background:var(--card);color:var(--teks1);">
+            <option value="">-- Pilih Kelas --</option>
+          </select>
+          <select id="tt-ind-siswa-sel" onchange="ttPilihSiswaDropdown()" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;background:var(--card);color:var(--teks1);">
+            <option value="">-- Pilih Siswa --</option>
+          </select>
         </div>
-        <!-- Dropdown hasil cari -->
-        <div id="tt-cari-result" style="padding:0 16px;max-height:160px;overflow:auto;"></div>
         <!-- Detail individu -->
         <div id="tt-individu-detail" style="padding:0 16px;flex:1;overflow:auto;display:none;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -10419,7 +10422,6 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
             </div>
           </div>
           <div id="tt-ind-tbl" style="margin-bottom:12px;"></div>
-          <!-- Pilih Guru Wali sebelum cetak -->
           <div style="background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px;">
             <label style="font-size:12px;font-weight:700;color:var(--teks2);display:block;margin-bottom:6px;">Guru Wali (untuk TTD)</label>
             <select id="tt-guru-wali" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg);color:var(--teks1);">
@@ -11800,8 +11802,8 @@ async function ttLoadData(forceRefresh){
 
 function ttPopulateKelas(){
   const kelas=[...new Set(dSiswa.map(s=>s.kelas))].sort(sortKelas);
-  ['tt-kelas','tt-rkelas'].forEach(id=>{
-    const sel=$( id);
+  ['tt-kelas','tt-rkelas','tt-ind-kelas-sel'].forEach(id=>{
+    const sel=$(id);
     if(!sel) return;
     sel.innerHTML='<option value="">-- Pilih Kelas --</option>';
     kelas.forEach(k=>sel.innerHTML+=`<option value="${k}">${k}</option>`);
@@ -11812,7 +11814,7 @@ function ttPopulatePelanggaran(){
   const sel=$('tt-pelanggaran');
   sel.innerHTML='<option value="">-- Pilih Pelanggaran --</option>';
   dTataTertib.forEach((t,i)=>{
-    sel.innerHTML+=`<option value="${i}" data-poin="${t.poin}">${t.jenis} (${t.poin} poin)</option>`;
+    sel.innerHTML+=`<option value="${i}" data-poin="${t.poin}">${t.jenis}</option>`;
   });
 }
 
@@ -11857,6 +11859,7 @@ async function ttSubmit(){
     toast('Lengkapi semua isian'); return;
   }
   const pel=dTataTertib[parseInt(idxPel)];
+  const namaGuru=guruData?.nama||guruLogin?.nama||'';
   const btn=$('tt-btn-submit');
   btn.disabled=true; btn.textContent='Menyimpan...';
   try{
@@ -11865,7 +11868,7 @@ async function ttSubmit(){
       headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({
         action:'submitPelanggaran',
-        namaGuru:guruData?.nama||'',
+        namaGuru,
         statusPelapor:status,
         namaSiswa:siswa,
         kelas,
@@ -11880,10 +11883,12 @@ async function ttSubmit(){
       $('tt-siswa').value='';
       $('tt-pelanggaran').value='';
       $('tt-poin-row').style.display='none';
-      $('tt-tgl-kejadian').value=new Date().toISOString().slice(0,10);
     } else { toast('Gagal: '+(d.error||'error')); }
-  }catch(e){ toast('Gagal koneksi'); }
-  btn.disabled=false; btn.textContent='Simpan Pelanggaran';
+  }catch(e){
+    console.error('[TT] Submit error:',e);
+    toast('Submit gagal — cek koneksi');
+  }
+  btn.disabled=false; btn.textContent='Submit';
 }
 
 async function ttRekapKelas(){
@@ -11908,18 +11913,22 @@ async function ttRekapKelas(){
   }catch(e){ tbl.innerHTML='<div style="color:var(--merah);padding:12px;">Gagal load data</div>'; }
 }
 
-function ttCariSiswa(){
-  const q=$('tt-cari-siswa').value.toLowerCase();
-  const res=$('tt-cari-result');
+function ttIndLoadSiswa(){
+  const kelas=$('tt-ind-kelas-sel').value;
+  const sel=$('tt-ind-siswa-sel');
+  sel.innerHTML='<option value="">-- Pilih Siswa --</option>';
   $('tt-individu-detail').style.display='none';
-  if(q.length<2){ res.innerHTML=''; return; }
-  const hasil=dSiswa.filter(s=>s.nama.toLowerCase().includes(q)).slice(0,10);
-  if(!hasil.length){ res.innerHTML='<div style="padding:10px;color:var(--teks3);font-size:12px;">Tidak ditemukan</div>'; return; }
-  res.innerHTML='<div style="background:var(--card);border-radius:10px;overflow:hidden;">'+
-    hasil.map(s=>`<div class="tt-cari-item" onclick="ttPilihSiswa('${s.nama.replace(/'/g,"\\'")}','${s.kelas}')">
-      <div class="tt-cari-nama">${s.nama}</div>
-      <div class="tt-cari-kelas">${s.kelas}</div>
-    </div>`).join('')+'</div>';
+  if(!kelas) return;
+  dSiswa.filter(s=>s.kelas===kelas)
+    .sort((a,b)=>a.nama.localeCompare(b.nama))
+    .forEach(s=>sel.innerHTML+=`<option value="${s.nama}">${s.nama}</option>`);
+}
+
+function ttPilihSiswaDropdown(){
+  const nama=$('tt-ind-siswa-sel').value;
+  const kelas=$('tt-ind-kelas-sel').value;
+  if(!nama||!kelas) return;
+  ttPilihSiswa(nama,kelas);
 }
 
 async function ttPilihSiswa(nama,kelas){
@@ -12035,17 +12044,20 @@ function ttCetakPDF(){
 }
 
 function ttGoto(sub){
-  ['input','kelas','individu'].forEach(s=>{
-    $('tt-'+s+'-sub'||('tt-'+s))?.classList.remove('aktif');
-    $('tt-tab-'+s)?.classList.remove('aktif');
-  });
-  $('tt-'+sub+(sub==='input'?'':'-sub'))?.classList.add('aktif');
-  $('tt-tab-'+sub)?.classList.add('aktif');
-  // Set tanggal default hari ini
+  // Sembunyikan semua sub-tab
+  document.querySelectorAll('.tt-sub').forEach(el=>el.classList.remove('aktif'));
+  document.querySelectorAll('.btn-tt-tab').forEach(el=>el.classList.remove('aktif'));
+  // Tampilkan yang dipilih
+  const subMap={input:'tt-input',kelas:'tt-kelas-sub',individu:'tt-individu-sub'};
+  const el=$(subMap[sub]);
+  if(el) el.classList.add('aktif');
+  const btn=$('tt-tab-'+sub);
+  if(btn) btn.classList.add('aktif');
   if(sub==='input'){
     const tglIn=$('tt-tgl-kejadian');
     if(tglIn&&!tglIn.value) tglIn.value=new Date().toISOString().slice(0,10);
-    $('tt-pelapor-nama').textContent=guruData?.nama||'—';
+    const namaGuru=guruData?.nama||guruLogin?.nama||'—';
+    $('tt-pelapor-nama').textContent=namaGuru;
   }
 }
 
