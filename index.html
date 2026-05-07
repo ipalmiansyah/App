@@ -10397,6 +10397,9 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
           </select>
         </div>
         <div id="tt-rekap-kelas-tbl" style="padding:0 16px;overflow:auto;flex:1;"></div>
+        <div style="padding:8px 16px 16px;">
+          <button id="tt-btn-cetak-kelas" class="btn-primary" onclick="ttCetakPDFKelas()" style="width:100%;display:none;">🖨️ Cetak / Download PDF</button>
+        </div>
       </div>
 
       <!-- ── REKAP INDIVIDU ── -->
@@ -10422,12 +10425,6 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
             </div>
           </div>
           <div id="tt-ind-tbl" style="margin-bottom:12px;"></div>
-          <div style="background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px;">
-            <label style="font-size:12px;font-weight:700;color:var(--teks2);display:block;margin-bottom:6px;">Guru Wali (untuk TTD)</label>
-            <select id="tt-guru-wali" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg);color:var(--teks1);">
-              <option value="">-- Pilih Guru Wali --</option>
-            </select>
-          </div>
           <button class="btn-primary" onclick="ttCetakPDF()" style="width:100%;">🖨️ Cetak / Download PDF</button>
         </div>
       </div>
@@ -11821,14 +11818,7 @@ function ttPopulatePelanggaran(){
   });
 }
 
-function ttPopulateGuruWali(){
-  const sel=$('tt-guru-wali');
-  if(!sel) return;
-  sel.innerHTML='<option value="">-- Pilih Guru Wali --</option>';
-  dGuru.sort((a,b)=>a.nama.localeCompare(b.nama)).forEach(g=>{
-    sel.innerHTML+=`<option value="${g.nama}">${g.nama}</option>`;
-  });
-}
+function ttPopulateGuruWali(){ /* guru wali otomatis dari guruLogin */ }
 
 function ttLoadSiswa(){
   const kelas=$('tt-kelas').value;
@@ -11894,25 +11884,31 @@ async function ttSubmit(){
   btn.disabled=false; btn.textContent='Submit';
 }
 
+let dRekapKelasData=[];
 async function ttRekapKelas(){
   const kelas=$('tt-rkelas').value;
   const tbl=$('tt-rekap-kelas-tbl');
+  const btnCetak=$('tt-btn-cetak-kelas');
+  dRekapKelasData=[];
+  if(btnCetak) btnCetak.style.display='none';
   if(!kelas){ tbl.innerHTML=''; return; }
   tbl.innerHTML='<div style="text-align:center;padding:20px;color:var(--teks3)">Memuat...</div>';
   try{
     const r=await fetch(CFG.APPS_SCRIPT_URL+`?action=getRekapKelas&kelas=${encodeURIComponent(kelas)}`);
     const d=await r.json();
-    if(!d.data||!d.data.length){ tbl.innerHTML='<div style="text-align:center;padding:20px;color:var(--teks3)">Tidak ada data</div>'; return; }
-    let html='<div style="background:var(--card);border-radius:12px;overflow:hidden;">';
-    d.data.forEach((s,i)=>{
-      html+=`<div class="tt-kelas-row">
+    dRekapKelasData=d.data||[];
+    if(!dRekapKelasData.length){ tbl.innerHTML='<div style="text-align:center;padding:20px;color:var(--teks3)">Tidak ada data siswa</div>'; return; }
+    let html2='<div style="background:var(--card);border-radius:12px;overflow:hidden;">';
+    dRekapKelasData.forEach((s,i)=>{
+      html2+=`<div class="tt-kelas-row">
         <div class="tt-row-no">${i+1}</div>
         <div class="tt-kelas-nama">${s.nama}</div>
         <div class="tt-kelas-poin">${s.totalPoin}</div>
       </div>`;
     });
-    html+='</div>';
-    tbl.innerHTML=html;
+    html2+='</div>';
+    tbl.innerHTML=html2;
+    if(btnCetak) btnCetak.style.display='block';
   }catch(e){ tbl.innerHTML='<div style="color:var(--merah);padding:12px;">Gagal load data</div>'; }
 }
 
@@ -11957,7 +11953,7 @@ async function ttPilihSiswa(nama,kelas){
           <div class="tt-row-no">${i+1}</div>
           <div class="tt-row-body">
             <div class="tt-row-pel">${p.pelanggaran}</div>
-            <div class="tt-row-meta">${p.pelapor} · ${p.statusPelapor} · ${p.tanggal}</div>
+            <div class="tt-row-meta">${p.pelapor} · ${p.statusPelapor} · ${fmtTgl(p.tanggal)}</div>
           </div>
           <div class="tt-row-poin">${p.poin}</div>
         </div>`;
@@ -11968,14 +11964,54 @@ async function ttPilihSiswa(nama,kelas){
   }catch(e){ $('tt-ind-tbl').innerHTML='<div style="color:var(--merah);padding:12px;">Gagal load data</div>'; }
 }
 
+// Format tanggal Indonesia tanpa jam
+function fmtTgl(str){
+  if(!str) return '';
+  // Coba parse berbagai format
+  let d;
+  if(str.includes('/')){ // dd/MM/yyyy atau dd/MM/yyyy HH:mm:ss
+    const parts=str.split(' ')[0].split('/');
+    if(parts.length===3) d=new Date(parts[2],parts[1]-1,parts[0]);
+  } else if(str.includes('-')){ // yyyy-MM-dd
+    d=new Date(str+'T00:00:00');
+  }
+  if(!d||isNaN(d)) return str;
+  return d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+
+function ttKopHTML(){
+  return `<div class="kop">
+    <h3>PEMERINTAH KABUPATEN SAROLANGUN</h3>
+    <h3>DINAS PENDIDIKAN DAN KEBUDAYAAN</h3>
+    <h2>SMP NEGERI 5 SAROLANGUN</h2>
+    <p>Alamat: Jln. Diponegoro No1 Desa Bukit Talang Mas, Kec. Singkut &nbsp;&nbsp; Kode Pos. 37482</p>
+  </div>`;
+}
+
+function ttStyleHTML(){
+  return `<style>
+    body{font-family:Arial,sans-serif;font-size:12px;margin:0;padding:20px;}
+    .kop{text-align:center;border-bottom:3px double #000;padding-bottom:8px;margin-bottom:16px;}
+    .kop h2,.kop h3{margin:2px 0;}.kop p{margin:2px 0;font-size:11px;}
+    h4{text-align:center;margin:12px 0 4px;}
+    .info td{padding:2px 8px 2px 0;vertical-align:top;}
+    table.tbl{width:100%;border-collapse:collapse;margin-top:10px;}
+    table.tbl th,table.tbl td{border:1px solid #000;padding:5px 8px;font-size:11px;}
+    table.tbl th{background:#f0f0f0;font-weight:bold;text-align:center;}
+    .total{text-align:right;margin-top:8px;font-weight:bold;}
+    .ttd{display:flex;justify-content:space-between;margin-top:40px;}
+    .ttd-box{text-align:center;width:220px;}
+    .ttd-box .space{height:60px;}
+  </style>`;
+}
+
 function ttCetakPDF(){
   if(!ttSiswaDipilih){ toast('Pilih siswa dulu'); return; }
-  const guruWali=$('tt-guru-wali').value;
-  if(!guruWali){ toast('Pilih Guru Wali dulu'); return; }
+  const guruWali=guruLogin?.nama||'';
   const nama=$('tt-ind-nama').textContent;
   const kelas=$('tt-ind-kelas').textContent;
   const total=$('tt-ind-total').textContent;
-  // Ambil data dari tabel yang sudah ditampilkan
+  const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
   const rows=[];
   document.querySelectorAll('#tt-ind-tbl .tt-row-item').forEach((el,i)=>{
     const pel=el.querySelector('.tt-row-pel')?.textContent||'';
@@ -11984,32 +12020,9 @@ function ttCetakPDF(){
     const parts=meta.split(' · ');
     rows.push({no:i+1,pelanggaran:pel,pelapor:parts[0]||'',status:parts[1]||'',tanggal:parts[2]||'',poin});
   });
-
-  const tgl=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <title>Rekap Pelanggaran - ${nama}</title>
-  <style>
-    body{font-family:Arial,sans-serif;font-size:12px;margin:0;padding:20px;}
-    .kop{text-align:center;border-bottom:3px double #000;padding-bottom:8px;margin-bottom:16px;}
-    .kop h2,.kop h3{margin:2px 0;}
-    .kop p{margin:2px 0;font-size:11px;}
-    h4{text-align:center;margin:12px 0 4px;}
-    .info{margin:10px 0;}
-    .info td{padding:2px 8px 2px 0;vertical-align:top;}
-    table.tbl{width:100%;border-collapse:collapse;margin-top:10px;}
-    table.tbl th,table.tbl td{border:1px solid #000;padding:5px 8px;text-align:left;font-size:11px;}
-    table.tbl th{background:#f0f0f0;font-weight:bold;text-align:center;}
-    .total{text-align:right;margin-top:8px;font-weight:bold;}
-    .ttd{display:flex;justify-content:space-between;margin-top:40px;}
-    .ttd-box{text-align:center;width:220px;}
-    .ttd-box .space{height:60px;}
-  </style></head><body>
-  <div class="kop">
-    <h3>PEMERINTAH KABUPATEN SAROLANGUN</h3>
-    <h3>DINAS PENDIDIKAN DAN KEBUDAYAAN</h3>
-    <h2>SMP NEGERI 5 SAROLANGUN</h2>
-    <p>Alamat: Jln. Diponegoro No1 Desa Bukit Talang Mas, Kec. Singkut &nbsp;&nbsp; Kode Pos. 37482</p>
-  </div>
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rekap - ${nama}</title>${ttStyleHTML()}</head><body>
+  ${ttKopHTML()}
   <h4>REKAP PELANGGARAN TATA TERTIB SISWA</h4>
   <p style="text-align:center;margin:2px 0;">TAHUN AJARAN 2025/2026</p>
   <p style="margin:10px 0;">Berikut adalah rekap data pelanggaran tata tertib siswa atas nama :</p>
@@ -12021,31 +12034,45 @@ function ttCetakPDF(){
     <th style="width:30px">No</th><th>Pelanggaran</th><th>Pelapor</th><th>Status Pelapor</th><th>Tanggal Kejadian</th><th style="width:40px">Poin</th>
   </tr></thead><tbody>
   ${rows.map(r=>`<tr><td style="text-align:center">${r.no}</td><td>${r.pelanggaran}</td><td>${r.pelapor}</td><td>${r.status}</td><td>${r.tanggal}</td><td style="text-align:center">${r.poin}</td></tr>`).join('')}
-  ${rows.length===0?'<tr><td colspan="6" style="text-align:center">-</td></tr>':''}
+  ${!rows.length?'<tr><td colspan="6" style="text-align:center">-</td></tr>':''}
   </tbody></table>
   <div class="total">Total Poin: ${total}</div>
   <div class="ttd">
-    <div class="ttd-box">
-      <p>Mengetahui,</p>
-      <p>Kepala SMP Negeri 5 Sarolangun</p>
-      <div class="space"></div>
-      <p><b>Sukardiman, M.Pd.</b></p>
-      <p>NIP. 197512102003121004</p>
-    </div>
-    <div class="ttd-box">
-      <p>Sarolangun, ${tgl}</p>
-      <p>Guru Wali</p>
-      <div class="space"></div>
-      <p><b>${guruWali}</b></p>
-    </div>
-  </div>
-  </body></html>`;
-
-  const w=window.open('','_blank');
-  w.document.write(html);
+    <div class="ttd-box"><p>Mengetahui,</p><p>Kepala SMP Negeri 5 Sarolangun</p>
+    <div class="space"></div><p><b>Sukardiman, M.Pd.</b></p><p>NIP. 197512102003121004</p></div>
+    <div class="ttd-box"><p>Sarolangun, ${tglCetak}</p><p>Guru Wali</p>
+    <div class="space"></div><p><b>${guruWali}</b></p></div>
+  </div></body></html>`);
   w.document.close();
   setTimeout(()=>w.print(),500);
 }
+
+function ttCetakPDFKelas(){
+  const kelas=$('tt-rkelas').value;
+  if(!kelas||!dRekapKelasData.length){ toast('Pilih kelas dulu'); return; }
+  const guruWali=guruLogin?.nama||'';
+  const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rekap Kelas - ${kelas}</title>${ttStyleHTML()}</head><body>
+  ${ttKopHTML()}
+  <h4>REKAP PELANGGARAN TATA TERTIB SISWA</h4>
+  <p style="text-align:center;margin:2px 0;">TAHUN AJARAN 2025/2026</p>
+  <p style="margin:10px 0;">Rekap data pelanggaran tata tertib siswa kelas <b>${kelas}</b> :</p>
+  <table class="tbl"><thead><tr>
+    <th style="width:30px">No</th><th>Nama Siswa</th><th style="width:80px">Total Poin</th>
+  </tr></thead><tbody>
+  ${dRekapKelasData.map((s,i)=>`<tr><td style="text-align:center">${i+1}</td><td>${s.nama}</td><td style="text-align:center">${s.totalPoin}</td></tr>`).join('')}
+  </tbody></table>
+  <div class="ttd">
+    <div class="ttd-box"><p>Mengetahui,</p><p>Kepala SMP Negeri 5 Sarolangun</p>
+    <div class="space"></div><p><b>Sukardiman, M.Pd.</b></p><p>NIP. 197512102003121004</p></div>
+    <div class="ttd-box"><p>Sarolangun, ${tglCetak}</p><p>Wali Kelas ${kelas}</p>
+    <div class="space"></div><p><b>${guruWali}</b></p></div>
+  </div></body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),500);
+}
+
 
 function ttGoto(sub){
   // Sembunyikan semua sub-tab
