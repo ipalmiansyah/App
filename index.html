@@ -10004,7 +10004,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .mon-tbl tr:last-child td{border-bottom:none;}
 .ch{background:#dcfce7;border:1px solid #86efac;border-radius:6px;padding:4px 3px;}
 .cm{background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;padding:4px 3px;animation:rp 2s ease-in-out infinite;cursor:pointer;}
-.cmh{background:#ffe4e6;border:1px solid #fda4af;border-radius:6px;padding:4px 3px;}
+.cmh{background:#ede9fe;border:1px solid #c4b5fd;border-radius:6px;padding:4px 3px;}
 .ck{background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:4px 3px;}
 .cb{background:rgba(147,197,253,0.15);border:1px solid rgba(147,197,253,0.3);border-radius:6px;padding:4px 3px;}
 .ca{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:4px 3px;}
@@ -10012,7 +10012,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .cn{font-weight:800;font-size:10px;line-height:1.2;}.cp{font-size:9px;line-height:1.2;margin-top:1px;}.cj{font-family:var(--mono);font-size:8px;margin-top:2px;}
 .ch .cn{color:#15803d;}.ch .cp{color:#16a34a;}.ch .cj{color:#fbbf24;}
 .cm .cn{color:#b91c1c;}.cm .cp{color:#dc2626;}
-.cmh .cn{color:#9f1239;}.cmh .cp{color:#be123c;}.cmh .cj{color:#f43f5e;font-size:7px;text-align:right;}
+.cmh .cn{color:#5b21b6;}.cmh .cp{color:#6d28d9;}.cmh .cj{color:#7c3aed;font-size:7px;text-align:right;}
 .ck .cn{color:#92400e;}.ck .cp{color:#b45309;}
 .cb .cn{color:#1d4ed8;}.cb .cp{color:#2563eb;}
 .ca .cn{color:#94a3b8;}.ca .cp{color:#cbd5e1;}
@@ -10141,6 +10141,30 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .toggle-slider:before{position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;}
 .toggle-switch input:checked + .toggle-slider{background:var(--g4);}
 .toggle-switch input:checked + .toggle-slider:before{transform:translateX(22px);}
+/* TATA TERTIB */
+.btn-tt-tab{flex:1;padding:8px 4px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--teks2);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
+.btn-tt-tab.aktif{background:var(--g4);color:#fff;border-color:var(--g4);}
+.tt-sub{display:none;flex-direction:column;flex:1;overflow:auto;}
+.tt-sub.aktif{display:flex;}
+.form-card{background:var(--card);border-radius:14px;padding:16px;margin:0 16px;display:flex;flex-direction:column;gap:12px;}
+.form-row{display:flex;flex-direction:column;gap:4px;}
+.form-row label{font-size:11px;font-weight:700;color:var(--teks3);text-transform:uppercase;}
+.form-row select,.form-row input[type=date]{padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;background:var(--bg);color:var(--teks1);font-family:var(--font);width:100%;}
+.tt-row-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.tt-row-item:last-child{border-bottom:none;}
+.tt-row-no{width:20px;text-align:center;font-size:11px;color:var(--teks3);font-weight:700;flex-shrink:0;padding-top:2px;}
+.tt-row-body{flex:1;}
+.tt-row-pel{font-size:13px;font-weight:700;color:var(--teks1);}
+.tt-row-meta{font-size:11px;color:var(--teks3);margin-top:2px;}
+.tt-row-poin{font-weight:900;font-size:15px;color:var(--merah);flex-shrink:0;}
+.tt-kelas-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:10px;}
+.tt-kelas-row:last-child{border-bottom:none;}
+.tt-kelas-nama{flex:1;font-size:13px;font-weight:700;color:var(--teks1);}
+.tt-kelas-poin{font-weight:900;font-size:14px;color:var(--merah);min-width:40px;text-align:right;}
+.tt-cari-item{padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;background:var(--card);}
+.tt-cari-item:last-child{border-bottom:none;}
+.tt-cari-nama{font-size:13px;font-weight:700;color:var(--teks1);}
+.tt-cari-kelas{font-size:11px;color:var(--teks3);}
 </style>
 </head>
 <body>
@@ -10305,6 +10329,108 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
       </div>
     </div>
 
+    <!-- ══ TATA TERTIB ══ -->
+    <div class="page" id="pg-tt">
+      <div class="pg-hdr"><h2>📋 Tata Tertib Siswa</h2></div>
+
+      <!-- Sub-tab -->
+      <div style="display:flex;gap:8px;padding:0 16px 12px;flex-shrink:0;">
+        <button class="btn-tt-tab aktif" id="tt-tab-input" onclick="ttGoto('input')">✏️ Input</button>
+        <button class="btn-tt-tab" id="tt-tab-kelas" onclick="ttGoto('kelas')">👥 Rekap Kelas</button>
+        <button class="btn-tt-tab" id="tt-tab-individu" onclick="ttGoto('individu')">🔍 Rekap Individu</button>
+      </div>
+
+      <!-- ── INPUT PELANGGARAN ── -->
+      <div class="tt-sub aktif" id="tt-input">
+        <div class="form-card">
+          <div class="form-row">
+            <label>Kelas</label>
+            <select id="tt-kelas" onchange="ttLoadSiswa()">
+              <option value="">-- Pilih Kelas --</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Nama Siswa</label>
+            <select id="tt-siswa">
+              <option value="">-- Pilih Siswa --</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Pelanggaran</label>
+            <select id="tt-pelanggaran" onchange="ttShowPoin()">
+              <option value="">-- Pilih Pelanggaran --</option>
+            </select>
+          </div>
+          <div class="form-row" id="tt-poin-row" style="display:none;">
+            <label>Poin</label>
+            <div id="tt-poin-val" style="font-weight:800;font-size:18px;color:var(--merah);"></div>
+          </div>
+          <div class="form-row">
+            <label>Tanggal Kejadian</label>
+            <input type="date" id="tt-tgl-kejadian">
+          </div>
+          <div class="form-row">
+            <label>Pelapor</label>
+            <div style="font-weight:700;color:var(--teks1);" id="tt-pelapor-nama">—</div>
+          </div>
+          <div class="form-row">
+            <label>Status</label>
+            <select id="tt-status-pelapor">
+              <option value="Guru Mapel">Guru Mapel</option>
+              <option value="Wali Kelas">Wali Kelas</option>
+              <option value="Guru Piket">Guru Piket</option>
+              <option value="Guru BK">Guru BK</option>
+              <option value="Kepala Sekolah">Kepala Sekolah</option>
+              <option value="Wakil Kepsek">Wakil Kepsek</option>
+            </select>
+          </div>
+          <button class="btn-primary" onclick="ttSubmit()" id="tt-btn-submit">Simpan Pelanggaran</button>
+          <div id="tt-submit-msg" style="display:none;margin-top:8px;text-align:center;font-size:12px;"></div>
+        </div>
+      </div>
+
+      <!-- ── REKAP KELAS ── -->
+      <div class="tt-sub" id="tt-kelas-sub">
+        <div style="padding:0 16px 8px;">
+          <select id="tt-rkelas" onchange="ttRekapKelas()" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;background:var(--card);color:var(--teks1);">
+            <option value="">-- Pilih Kelas --</option>
+          </select>
+        </div>
+        <div id="tt-rekap-kelas-tbl" style="padding:0 16px;overflow:auto;flex:1;"></div>
+      </div>
+
+      <!-- ── REKAP INDIVIDU ── -->
+      <div class="tt-sub" id="tt-individu-sub">
+        <div style="padding:0 16px 8px;display:flex;gap:8px;">
+          <input type="text" id="tt-cari-siswa" placeholder="Cari nama siswa..." style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;background:var(--card);color:var(--teks1);" oninput="ttCariSiswa()">
+        </div>
+        <!-- Dropdown hasil cari -->
+        <div id="tt-cari-result" style="padding:0 16px;max-height:160px;overflow:auto;"></div>
+        <!-- Detail individu -->
+        <div id="tt-individu-detail" style="padding:0 16px;flex:1;overflow:auto;display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div>
+              <div id="tt-ind-nama" style="font-weight:800;font-size:15px;color:var(--teks1);"></div>
+              <div id="tt-ind-kelas" style="font-size:12px;color:var(--teks3);"></div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:11px;color:var(--teks3);">Total Poin</div>
+              <div id="tt-ind-total" style="font-weight:900;font-size:22px;color:var(--merah);"></div>
+            </div>
+          </div>
+          <div id="tt-ind-tbl" style="margin-bottom:12px;"></div>
+          <!-- Pilih Guru Wali sebelum cetak -->
+          <div style="background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px;">
+            <label style="font-size:12px;font-weight:700;color:var(--teks2);display:block;margin-bottom:6px;">Guru Wali (untuk TTD)</label>
+            <select id="tt-guru-wali" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg);color:var(--teks1);">
+              <option value="">-- Pilih Guru Wali --</option>
+            </select>
+          </div>
+          <button class="btn-primary" onclick="ttCetakPDF()" style="width:100%;">🖨️ Cetak / Download PDF</button>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /pages -->
 
   <div class="bottom-nav">
@@ -10323,6 +10449,10 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     <button class="nav-item" id="nv-rekap" onclick="goto('rekap')">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       <span class="nav-label">Rekap</span>
+    </button>
+    <button class="nav-item" id="nv-tt" onclick="goto('tt')">
+      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span class="nav-label">Tata Tertib</span>
     </button>
   </div>
 </div>
@@ -10736,7 +10866,8 @@ function tampilApp(){
 function tick(){
   const d=new Date();
   $('clk').textContent=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-  $('clk-tgl').textContent=d.toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+  const HARI=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  $('clk-tgl').textContent=HARI[d.getDay()]+', '+d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
   $('mon-jam').textContent=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
 }
 setInterval(tick,1000); tick();
@@ -11092,8 +11223,8 @@ let kgiPinValInt='', guruPiketLogin=null, kgiBerlakuUntuk='semua', kgiKetVal='',
 function bukaKgi(){
   if(guruLogin){
     const hr=hariIni();
-    const hp=(guruLogin.piket||'').split(',').map(h=>h.trim());
-    if(hp.includes(hr)){
+    const hp=(guruLogin.piket||'').split(',').map(h=>h.trim()).filter(h=>h);
+    if(!hp.length||hp.includes(hr)){
       guruPiketLogin=guruLogin;
       $('kgi-piket-info').textContent='✓ '+guruLogin.nama+' — Piket '+hr;
       $('kgi-step-pin').style.display='none';
@@ -11117,8 +11248,8 @@ function npKgi(v){
 function konfKgiPin(){
   const g=dGuru.find(x=>x.pin===kgiPinValInt);
   if(!g){ const d=$('kgi-pin-disp');d.classList.add('err');d.textContent='PIN SALAH ✗';setTimeout(()=>{kgiPinValInt='';$('kgi-pin-disp').textContent='____';$('kgi-pin-disp').classList.remove('err');},1200);return; }
-  const hr=hariIni(), hp=(g.piket||'').split(',').map(h=>h.trim());
-  if(!hp.includes(hr)){ const d=$('kgi-pin-disp');d.classList.add('err');d.textContent='BUKAN PIKET';setTimeout(()=>{kgiPinValInt='';$('kgi-pin-disp').textContent='____';$('kgi-pin-disp').classList.remove('err');},1500);return; }
+  const hr=hariIni(), hp=(g.piket||'').split(',').map(h=>h.trim()).filter(h=>h);
+  if(hp.length&&!hp.includes(hr)){ const d=$('kgi-pin-disp');d.classList.add('err');d.textContent='BUKAN PIKET';setTimeout(()=>{kgiPinValInt='';$('kgi-pin-disp').textContent='____';$('kgi-pin-disp').classList.remove('err');},1500);return; }
   guruPiketLogin=g; $('kgi-piket-info').textContent='✓ '+g.nama+' — Piket '+hr;
   $('kgi-step-pin').style.display='none'; $('kgi-step-form').style.display='block';
   initKgiForm();
@@ -11624,6 +11755,285 @@ try{
 }catch(e){}
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 cekToken();
+
+// ══════════════════════════════════════════
+// TATA TERTIB SISWA
+// ══════════════════════════════════════════
+let dSiswa=[], dTataTertib=[], dTTLoaded=false;
+let ttSiswaDipilih=null;
+
+// Load data saat tab dibuka pertama kali
+async function ttLoadData(){
+  if(dTTLoaded) return;
+  try{
+    const r=await fetch(CFG.APPS_SCRIPT_URL+'?action=getDataTataTertib');
+    const d=await r.json();
+    dSiswa=d.siswa||[];
+    dTataTertib=d.tataTertib||[];
+    dTTLoaded=true;
+    ttPopulateKelas();
+    ttPopulatePelanggaran();
+    ttPopulateGuruWali();
+  }catch(e){ toast('Gagal load data tata tertib'); }
+}
+
+function ttPopulateKelas(){
+  const kelas=[...new Set(dSiswa.map(s=>s.kelas))].sort(sortKelas);
+  ['tt-kelas','tt-rkelas'].forEach(id=>{
+    const sel=$( id);
+    if(!sel) return;
+    sel.innerHTML='<option value="">-- Pilih Kelas --</option>';
+    kelas.forEach(k=>sel.innerHTML+=`<option value="${k}">${k}</option>`);
+  });
+}
+
+function ttPopulatePelanggaran(){
+  const sel=$('tt-pelanggaran');
+  sel.innerHTML='<option value="">-- Pilih Pelanggaran --</option>';
+  dTataTertib.forEach((t,i)=>{
+    sel.innerHTML+=`<option value="${i}" data-poin="${t.poin}">${t.jenis} (${t.poin} poin)</option>`;
+  });
+}
+
+function ttPopulateGuruWali(){
+  const sel=$('tt-guru-wali');
+  if(!sel) return;
+  sel.innerHTML='<option value="">-- Pilih Guru Wali --</option>';
+  dGuru.sort((a,b)=>a.nama.localeCompare(b.nama)).forEach(g=>{
+    sel.innerHTML+=`<option value="${g.nama}">${g.nama}</option>`;
+  });
+}
+
+function ttLoadSiswa(){
+  const kelas=$('tt-kelas').value;
+  const sel=$('tt-siswa');
+  sel.innerHTML='<option value="">-- Pilih Siswa --</option>';
+  if(!kelas) return;
+  dSiswa.filter(s=>s.kelas===kelas)
+    .sort((a,b)=>a.nama.localeCompare(b.nama))
+    .forEach(s=>sel.innerHTML+=`<option value="${s.nama}">${s.nama}</option>`);
+}
+
+function ttShowPoin(){
+  const sel=$('tt-pelanggaran');
+  const opt=sel.options[sel.selectedIndex];
+  const poinRow=$('tt-poin-row');
+  if(opt&&opt.dataset.poin){
+    $('tt-poin-val').textContent=opt.dataset.poin+' poin';
+    poinRow.style.display='flex';
+  } else {
+    poinRow.style.display='none';
+  }
+}
+
+async function ttSubmit(){
+  const kelas=$('tt-kelas').value;
+  const siswa=$('tt-siswa').value;
+  const idxPel=$('tt-pelanggaran').value;
+  const tgl=$('tt-tgl-kejadian').value;
+  const status=$('tt-status-pelapor').value;
+  if(!kelas||!siswa||idxPel===''||!tgl){
+    toast('Lengkapi semua isian'); return;
+  }
+  const pel=dTataTertib[parseInt(idxPel)];
+  const btn=$('tt-btn-submit');
+  btn.disabled=true; btn.textContent='Menyimpan...';
+  try{
+    const r=await fetch(CFG.APPS_SCRIPT_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({
+        action:'submitPelanggaran',
+        namaGuru:guruData?.nama||'',
+        statusPelapor:status,
+        namaSiswa:siswa,
+        kelas,
+        pelanggaran:pel.jenis,
+        poin:pel.poin,
+        tanggal:tgl
+      })
+    });
+    const d=await r.json();
+    if(d.ok){
+      toast('✅ Pelanggaran tersimpan');
+      $('tt-siswa').value='';
+      $('tt-pelanggaran').value='';
+      $('tt-poin-row').style.display='none';
+      $('tt-tgl-kejadian').value=new Date().toISOString().slice(0,10);
+    } else { toast('Gagal: '+(d.error||'error')); }
+  }catch(e){ toast('Gagal koneksi'); }
+  btn.disabled=false; btn.textContent='Simpan Pelanggaran';
+}
+
+async function ttRekapKelas(){
+  const kelas=$('tt-rkelas').value;
+  const tbl=$('tt-rekap-kelas-tbl');
+  if(!kelas){ tbl.innerHTML=''; return; }
+  tbl.innerHTML='<div style="text-align:center;padding:20px;color:var(--teks3)">Memuat...</div>';
+  try{
+    const r=await fetch(CFG.APPS_SCRIPT_URL+`?action=getRekapKelas&kelas=${encodeURIComponent(kelas)}`);
+    const d=await r.json();
+    if(!d.data||!d.data.length){ tbl.innerHTML='<div style="text-align:center;padding:20px;color:var(--teks3)">Tidak ada data</div>'; return; }
+    let html='<div style="background:var(--card);border-radius:12px;overflow:hidden;">';
+    d.data.forEach((s,i)=>{
+      html+=`<div class="tt-kelas-row">
+        <div class="tt-row-no">${i+1}</div>
+        <div class="tt-kelas-nama">${s.nama}</div>
+        <div class="tt-kelas-poin">${s.totalPoin}</div>
+      </div>`;
+    });
+    html+='</div>';
+    tbl.innerHTML=html;
+  }catch(e){ tbl.innerHTML='<div style="color:var(--merah);padding:12px;">Gagal load data</div>'; }
+}
+
+function ttCariSiswa(){
+  const q=$('tt-cari-siswa').value.toLowerCase();
+  const res=$('tt-cari-result');
+  $('tt-individu-detail').style.display='none';
+  if(q.length<2){ res.innerHTML=''; return; }
+  const hasil=dSiswa.filter(s=>s.nama.toLowerCase().includes(q)).slice(0,10);
+  if(!hasil.length){ res.innerHTML='<div style="padding:10px;color:var(--teks3);font-size:12px;">Tidak ditemukan</div>'; return; }
+  res.innerHTML='<div style="background:var(--card);border-radius:10px;overflow:hidden;">'+
+    hasil.map(s=>`<div class="tt-cari-item" onclick="ttPilihSiswa('${s.nama.replace(/'/g,"\\'")}','${s.kelas}')">
+      <div class="tt-cari-nama">${s.nama}</div>
+      <div class="tt-cari-kelas">${s.kelas}</div>
+    </div>`).join('')+'</div>';
+}
+
+async function ttPilihSiswa(nama,kelas){
+  $('tt-cari-result').innerHTML='';
+  $('tt-cari-siswa').value=nama;
+  const det=$('tt-individu-detail');
+  det.style.display='block';
+  $('tt-ind-nama').textContent=nama;
+  $('tt-ind-kelas').textContent=kelas;
+  $('tt-ind-tbl').innerHTML='<div style="text-align:center;padding:20px;color:var(--teks3)">Memuat...</div>';
+  $('tt-ind-total').textContent='...';
+  ttSiswaDipilih={nama,kelas};
+  try{
+    const r=await fetch(CFG.APPS_SCRIPT_URL+`?action=getRekapIndividu&nama=${encodeURIComponent(nama)}&kelas=${encodeURIComponent(kelas)}`);
+    const d=await r.json();
+    const data=d.data||[];
+    const total=data.reduce((s,x)=>s+(parseInt(x.poin)||0),0);
+    $('tt-ind-total').textContent=total;
+    if(!data.length){ $('tt-ind-tbl').innerHTML='<div style="text-align:center;padding:20px;color:var(--teks3)">Belum ada pelanggaran</div>'; return; }
+    let html='<div style="background:var(--card);border-radius:12px;padding:8px 12px;">';
+    data.forEach((p,i)=>{
+      html+=`<div class="tt-row-item">
+        <div class="tt-row-no">${i+1}</div>
+        <div class="tt-row-body">
+          <div class="tt-row-pel">${p.pelanggaran}</div>
+          <div class="tt-row-meta">${p.pelapor} · ${p.statusPelapor} · ${p.tanggal}</div>
+        </div>
+        <div class="tt-row-poin">${p.poin}</div>
+      </div>`;
+    });
+    html+='</div>';
+    $('tt-ind-tbl').innerHTML=html;
+  }catch(e){ $('tt-ind-tbl').innerHTML='<div style="color:var(--merah);padding:12px;">Gagal load data</div>'; }
+}
+
+function ttCetakPDF(){
+  if(!ttSiswaDipilih){ toast('Pilih siswa dulu'); return; }
+  const guruWali=$('tt-guru-wali').value;
+  if(!guruWali){ toast('Pilih Guru Wali dulu'); return; }
+  const nama=$('tt-ind-nama').textContent;
+  const kelas=$('tt-ind-kelas').textContent;
+  const total=$('tt-ind-total').textContent;
+  // Ambil data dari tabel yang sudah ditampilkan
+  const rows=[];
+  document.querySelectorAll('#tt-ind-tbl .tt-row-item').forEach((el,i)=>{
+    const pel=el.querySelector('.tt-row-pel')?.textContent||'';
+    const meta=el.querySelector('.tt-row-meta')?.textContent||'';
+    const poin=el.querySelector('.tt-row-poin')?.textContent||'';
+    const parts=meta.split(' · ');
+    rows.push({no:i+1,pelanggaran:pel,pelapor:parts[0]||'',status:parts[1]||'',tanggal:parts[2]||'',poin});
+  });
+
+  const tgl=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Rekap Pelanggaran - ${nama}</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:12px;margin:0;padding:20px;}
+    .kop{text-align:center;border-bottom:3px double #000;padding-bottom:8px;margin-bottom:16px;}
+    .kop h2,.kop h3{margin:2px 0;}
+    .kop p{margin:2px 0;font-size:11px;}
+    h4{text-align:center;margin:12px 0 4px;}
+    .info{margin:10px 0;}
+    .info td{padding:2px 8px 2px 0;vertical-align:top;}
+    table.tbl{width:100%;border-collapse:collapse;margin-top:10px;}
+    table.tbl th,table.tbl td{border:1px solid #000;padding:5px 8px;text-align:left;font-size:11px;}
+    table.tbl th{background:#f0f0f0;font-weight:bold;text-align:center;}
+    .total{text-align:right;margin-top:8px;font-weight:bold;}
+    .ttd{display:flex;justify-content:space-between;margin-top:40px;}
+    .ttd-box{text-align:center;width:220px;}
+    .ttd-box .space{height:60px;}
+  </style></head><body>
+  <div class="kop">
+    <h3>PEMERINTAH KABUPATEN SAROLANGUN</h3>
+    <h3>DINAS PENDIDIKAN DAN KEBUDAYAAN</h3>
+    <h2>SMP NEGERI 5 SAROLANGUN</h2>
+    <p>Alamat: Jln. Diponegoro No1 Desa Bukit Talang Mas, Kec. Singkut &nbsp;&nbsp; Kode Pos. 37482</p>
+  </div>
+  <h4>REKAP PELANGGARAN TATA TERTIB SISWA</h4>
+  <p style="text-align:center;margin:2px 0;">TAHUN AJARAN 2025/2026</p>
+  <p style="margin:10px 0;">Berikut adalah rekap data pelanggaran tata tertib siswa atas nama :</p>
+  <table class="info"><tr><td>Nama</td><td>: <b>${nama}</b></td></tr>
+  <tr><td>Kelas</td><td>: ${kelas}</td></tr>
+  <tr><td>Total Poin Pelanggaran</td><td>: <b>${total}</b></td></tr></table>
+  <p style="margin-top:10px;">Rincian pelanggaran sebagai berikut:</p>
+  <table class="tbl"><thead><tr>
+    <th style="width:30px">No</th><th>Pelanggaran</th><th>Pelapor</th><th>Status Pelapor</th><th>Tanggal Kejadian</th><th style="width:40px">Poin</th>
+  </tr></thead><tbody>
+  ${rows.map(r=>`<tr><td style="text-align:center">${r.no}</td><td>${r.pelanggaran}</td><td>${r.pelapor}</td><td>${r.status}</td><td>${r.tanggal}</td><td style="text-align:center">${r.poin}</td></tr>`).join('')}
+  ${rows.length===0?'<tr><td colspan="6" style="text-align:center">-</td></tr>':''}
+  </tbody></table>
+  <div class="total">Total Poin: ${total}</div>
+  <div class="ttd">
+    <div class="ttd-box">
+      <p>Mengetahui,</p>
+      <p>Kepala SMP Negeri 5 Sarolangun</p>
+      <div class="space"></div>
+      <p><b>Sukardiman, M.Pd.</b></p>
+      <p>NIP. 197512102003121004</p>
+    </div>
+    <div class="ttd-box">
+      <p>Sarolangun, ${tgl}</p>
+      <p>Guru Wali</p>
+      <div class="space"></div>
+      <p><b>${guruWali}</b></p>
+    </div>
+  </div>
+  </body></html>`;
+
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>w.print(),500);
+}
+
+function ttGoto(sub){
+  ['input','kelas','individu'].forEach(s=>{
+    $('tt-'+s+'-sub'||('tt-'+s))?.classList.remove('aktif');
+    $('tt-tab-'+s)?.classList.remove('aktif');
+  });
+  $('tt-'+sub+(sub==='input'?'':'-sub'))?.classList.add('aktif');
+  $('tt-tab-'+sub)?.classList.add('aktif');
+  // Set tanggal default hari ini
+  if(sub==='input'){
+    const tglIn=$('tt-tgl-kejadian');
+    if(tglIn&&!tglIn.value) tglIn.value=new Date().toISOString().slice(0,10);
+    $('tt-pelapor-nama').textContent=guruData?.nama||'—';
+  }
+}
+
+// Override goto untuk load data TT saat buka tab
+const _origGoto=goto;
+goto=function(pg){
+  _origGoto(pg);
+  if(pg==='tt') ttLoadData();
+};
 </script>
 </body>
 </html>
