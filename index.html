@@ -11761,16 +11761,37 @@ cekToken();
 // ══════════════════════════════════════════
 let dSiswa=[], dTataTertib=[], dTTLoaded=false;
 let ttSiswaDipilih=null;
+const TT_CACHE_KEY='tt_data_cache';
+const TT_CACHE_TTL=30*60*1000; // 30 menit
 
 // Load data saat tab dibuka pertama kali
-async function ttLoadData(){
-  if(dTTLoaded) return;
+async function ttLoadData(forceRefresh){
+  // Cek cache dulu
+  if(!forceRefresh){
+    try{
+      const cached=localStorage.getItem(TT_CACHE_KEY);
+      if(cached){
+        const {data,ts}=JSON.parse(cached);
+        if(Date.now()-ts<TT_CACHE_TTL){
+          dSiswa=data.siswa||[];
+          dTataTertib=data.tataTertib||[];
+          dTTLoaded=true;
+          ttPopulateKelas();
+          ttPopulatePelanggaran();
+          ttPopulateGuruWali();
+          return;
+        }
+      }
+    }catch(e){}
+  }
   try{
     const r=await fetch(CFG.APPS_SCRIPT_URL+'?action=getDataTataTertib');
     const d=await r.json();
     dSiswa=d.siswa||[];
     dTataTertib=d.tataTertib||[];
     dTTLoaded=true;
+    // Simpan ke cache
+    try{ localStorage.setItem(TT_CACHE_KEY,JSON.stringify({data:{siswa:dSiswa,tataTertib:dTataTertib},ts:Date.now()})); }catch(e){}
     ttPopulateKelas();
     ttPopulatePelanggaran();
     ttPopulateGuruWali();
