@@ -10384,7 +10384,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
               <option value="Wakil Kepsek">Wakil Kepsek</option>
             </select>
           </div>
-          <button class="btn-primary" onclick="ttSubmit()" id="tt-btn-submit">Submit</button>
+          <button onclick="ttSubmit()" id="tt-btn-submit" style="width:auto;align-self:center;padding:10px 32px;border-radius:20px;border:none;background:linear-gradient(135deg,var(--g4),var(--g5));color:#fff;font-weight:800;font-size:13px;letter-spacing:1px;cursor:pointer;font-family:var(--font);">SUBMIT</button>
           <div id="tt-submit-msg" style="display:none;margin-top:8px;text-align:center;font-size:12px;"></div>
         </div>
       </div>
@@ -11797,6 +11797,9 @@ async function ttLoadData(forceRefresh){
     ttPopulateKelas();
     ttPopulatePelanggaran();
     ttPopulateGuruWali();
+    // Isi pelapor otomatis
+    const nm=guruLogin?.nama||'';
+    if(nm) $('tt-pelapor-nama').textContent=nm;
   }catch(e){ toast('Gagal load data tata tertib'); }
 }
 
@@ -11859,7 +11862,7 @@ async function ttSubmit(){
     toast('Lengkapi semua isian'); return;
   }
   const pel=dTataTertib[parseInt(idxPel)];
-  const namaGuru=guruData?.nama||guruLogin?.nama||'';
+  const namaGuru=guruLogin?.nama||'';
   const btn=$('tt-btn-submit');
   btn.disabled=true; btn.textContent='Menyimpan...';
   try{
@@ -11932,8 +11935,6 @@ function ttPilihSiswaDropdown(){
 }
 
 async function ttPilihSiswa(nama,kelas){
-  $('tt-cari-result').innerHTML='';
-  $('tt-cari-siswa').value=nama;
   const det=$('tt-individu-detail');
   det.style.display='block';
   $('tt-ind-nama').textContent=nama;
@@ -11947,20 +11948,23 @@ async function ttPilihSiswa(nama,kelas){
     const data=d.data||[];
     const total=data.reduce((s,x)=>s+(parseInt(x.poin)||0),0);
     $('tt-ind-total').textContent=total;
-    if(!data.length){ $('tt-ind-tbl').innerHTML='<div style="text-align:center;padding:20px;color:var(--teks3)">Belum ada pelanggaran</div>'; return; }
-    let html='<div style="background:var(--card);border-radius:12px;padding:8px 12px;">';
-    data.forEach((p,i)=>{
-      html+=`<div class="tt-row-item">
-        <div class="tt-row-no">${i+1}</div>
-        <div class="tt-row-body">
-          <div class="tt-row-pel">${p.pelanggaran}</div>
-          <div class="tt-row-meta">${p.pelapor} · ${p.statusPelapor} · ${p.tanggal}</div>
-        </div>
-        <div class="tt-row-poin">${p.poin}</div>
-      </div>`;
-    });
-    html+='</div>';
-    $('tt-ind-tbl').innerHTML=html;
+    if(!data.length){
+      $('tt-ind-tbl').innerHTML='<div style="text-align:center;padding:16px;color:var(--teks3)">Belum ada pelanggaran</div>';
+    } else {
+      let html2='<div style="background:var(--card);border-radius:12px;padding:8px 12px;">';
+      data.forEach((p,i)=>{
+        html2+=`<div class="tt-row-item">
+          <div class="tt-row-no">${i+1}</div>
+          <div class="tt-row-body">
+            <div class="tt-row-pel">${p.pelanggaran}</div>
+            <div class="tt-row-meta">${p.pelapor} · ${p.statusPelapor} · ${p.tanggal}</div>
+          </div>
+          <div class="tt-row-poin">${p.poin}</div>
+        </div>`;
+      });
+      html2+='</div>';
+      $('tt-ind-tbl').innerHTML=html2;
+    }
   }catch(e){ $('tt-ind-tbl').innerHTML='<div style="color:var(--merah);padding:12px;">Gagal load data</div>'; }
 }
 
@@ -12056,7 +12060,7 @@ function ttGoto(sub){
   if(sub==='input'){
     const tglIn=$('tt-tgl-kejadian');
     if(tglIn&&!tglIn.value) tglIn.value=new Date().toISOString().slice(0,10);
-    const namaGuru=guruData?.nama||guruLogin?.nama||'—';
+    const namaGuru=guruLogin?.nama||'—';
     $('tt-pelapor-nama').textContent=namaGuru;
   }
 }
