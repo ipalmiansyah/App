@@ -10666,7 +10666,7 @@ const CFG = {
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyB2ESAAwcPW2vufabMbbLGkEEcp-_YksDtU_9QCW7_e5tXzxQA98TWfcR8HrqtiRaoJw/exec',
   SEKOLAH_LAT:  -2.517743,
   SEKOLAH_LNG:  102.650029,
-  RADIUS_METER: 70000,
+  RADIUS_METER: 70,
   NAMA_SEKOLAH: 'SMP Negeri 05 Sarolangun',
   ADMIN_PASS: 'admin2025',
   KEPSEK:       'Sukardiman, M.Pd.',
@@ -11895,13 +11895,15 @@ async function ttRekapKelas(){
   try{
     const r=await fetch(CFG.APPS_SCRIPT_URL+`?action=getRekapKelas&kelas=${encodeURIComponent(kelas)}`);
     const d=await r.json();
-    dRekapKelasData=d.data||[];
-    // Simpan wali kelas
-    window._ttWaliKelas = d.wali||'';
+    // Handle both {data:[],wali:''} and {data:{data:[],wali:''}} formats
+    const rekapData = Array.isArray(d.data) ? d.data : (d.data?.data||[]);
+    const rekapWali = d.wali || d.data?.wali || d.data?.data?.wali || '';
+    dRekapKelasData=rekapData;
+    window._ttWaliKelas = rekapWali;
     if(!dRekapKelasData.length){ tbl.innerHTML='<div style="text-align:center;padding:20px;color:var(--teks3)">Tidak ada data siswa</div>'; return; }
     let html2='<div style="background:var(--card);border-radius:12px;overflow:hidden;">';
     // Tampilkan wali kelas di atas tabel
-    if(d.wali) html2+=`<div style="padding:10px 12px;font-size:12px;color:var(--teks3);">Wali Kelas: <b style="color:var(--teks1)">${d.wali}</b></div>`;
+    if(rekapWali) html2+=`<div style="padding:10px 12px;font-size:12px;color:var(--teks3);">Wali Kelas: <b style="color:var(--teks1)">${rekapWali}</b></div>`;
     dRekapKelasData.forEach((s,i)=>{
       html2+=`<div class="tt-kelas-row">
         <div class="tt-row-no">${i+1}</div>
@@ -12071,7 +12073,7 @@ function ttCetakPDF(){
 function ttCetakPDFKelas(){
   const kelas=$('tt-rkelas').value;
   if(!kelas||!dRekapKelasData.length){ toast('Pilih kelas dulu'); return; }
-  const waliKelas=window._ttWaliKelas||guruLogin?.nama||'';
+  const waliKelas=window._ttWaliKelas||'';
   const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rekap Kelas - ${kelas}</title>${ttStyleHTML()}</head><body>
