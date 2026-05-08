@@ -11884,7 +11884,6 @@ async function ttSubmit(){
   btn.disabled=false; btn.textContent='Submit';
 }
 
-let dRekapKelasData=[];
 async function ttRekapKelas(){
   const kelas=$('tt-rkelas').value;
   const tbl=$('tt-rekap-kelas-tbl');
@@ -11897,8 +11896,12 @@ async function ttRekapKelas(){
     const r=await fetch(CFG.APPS_SCRIPT_URL+`?action=getRekapKelas&kelas=${encodeURIComponent(kelas)}`);
     const d=await r.json();
     dRekapKelasData=d.data||[];
+    // Simpan wali kelas
+    window._ttWaliKelas = d.wali||'';
     if(!dRekapKelasData.length){ tbl.innerHTML='<div style="text-align:center;padding:20px;color:var(--teks3)">Tidak ada data siswa</div>'; return; }
     let html2='<div style="background:var(--card);border-radius:12px;overflow:hidden;">';
+    // Tampilkan wali kelas di atas tabel
+    if(d.wali) html2+=`<div style="padding:10px 12px;font-size:12px;color:var(--teks3);">Wali Kelas: <b style="color:var(--teks1)">${d.wali}</b></div>`;
     dRekapKelasData.forEach((s,i)=>{
       html2+=`<div class="tt-kelas-row">
         <div class="tt-row-no">${i+1}</div>
@@ -11964,18 +11967,29 @@ async function ttPilihSiswa(nama,kelas){
   }catch(e){ $('tt-ind-tbl').innerHTML='<div style="color:var(--merah);padding:12px;">Gagal load data</div>'; }
 }
 
-// Format tanggal Indonesia tanpa jam
+// Format tanggal Indonesia tanpa jam — handle semua format Google Sheet
 function fmtTgl(str){
   if(!str) return '';
-  // Coba parse berbagai format
   let d;
-  if(str.includes('/')){ // dd/MM/yyyy atau dd/MM/yyyy HH:mm:ss
-    const parts=str.split(' ')[0].split('/');
-    if(parts.length===3) d=new Date(parts[2],parts[1]-1,parts[0]);
-  } else if(str.includes('-')){ // yyyy-MM-dd
-    d=new Date(str+'T00:00:00');
+  const s = String(str).trim();
+  // Format dd/MM/yyyy HH:mm:ss atau dd/MM/yyyy
+  if(s.includes('/')){
+    const parts = s.split(' ')[0].split('/');
+    if(parts.length===3){
+      const [dd,mm,yyyy] = parts;
+      d = new Date(parseInt(yyyy), parseInt(mm)-1, parseInt(dd));
+    }
   }
-  if(!d||isNaN(d)) return str;
+  // Format yyyy-MM-dd
+  else if(s.match(/^\d{4}-\d{2}-\d{2}/)){
+    d = new Date(s.split('T')[0]+'T00:00:00');
+  }
+  // Format M/D/YYYY (Google Sheet US locale)
+  else if(s.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)){
+    const parts = s.split('/');
+    d = new Date(parseInt(parts[2]), parseInt(parts[0])-1, parseInt(parts[1]));
+  }
+  if(!d||isNaN(d.getTime())) return s;
   return d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 }
 
@@ -12057,7 +12071,7 @@ function ttCetakPDF(){
 function ttCetakPDFKelas(){
   const kelas=$('tt-rkelas').value;
   if(!kelas||!dRekapKelasData.length){ toast('Pilih kelas dulu'); return; }
-  const guruWali=guruLogin?.nama||'';
+  const waliKelas=window._ttWaliKelas||guruLogin?.nama||'';
   const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rekap Kelas - ${kelas}</title>${ttStyleHTML()}</head><body>
@@ -12074,7 +12088,7 @@ function ttCetakPDFKelas(){
     <div class="ttd-box"><p>Mengetahui,</p><p>Kepala SMP Negeri 5 Sarolangun</p>
     <div class="space"></div><p><b>Sukardiman, M.Pd.</b></p><p>NIP. 197512102003121004</p></div>
     <div class="ttd-box"><p>Sarolangun, ${tglCetak}</p><p>Wali Kelas ${kelas}</p>
-    <div class="space"></div><p><b>${guruWali}</b></p></div>
+    <div class="space"></div><p><b>${waliKelas}</b></p></div>
   </div></body></html>`);
   w.document.close();
   setTimeout(()=>w.print(),500);
