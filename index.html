@@ -11468,9 +11468,11 @@ function renderRekap(){
     </div>`).join('');
 }
 
-function cetakRekap(){
+async function cetakRekap(){
   const{sn,sb}=getRentang();
   const fg=$('f-guru').value||'Semua Guru', fk=$('f-kelas').value||'Semua Kelas', fh=$('f-hari').value||'Semua Hari';
+  // Load wali kelas dari WALAS jika belum ada
+  if(fk && fk!=='Semua Kelas') await loadWaliKelas();
   const days=['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
   const tglList=[];
   for(let d=new Date(sn);d<=sb;d.setDate(d.getDate()+1)){
@@ -11570,11 +11572,13 @@ tr:nth-child(even) td{background:#f5f5f5}
     <div><span class="garis"></span></div>
     <div class="ttd-nama">${CFG.KURIKULUM}</div><div class="ttd-nip">${CFG.KURIKULUM_NIP}</div>
   </div>
+${(fk&&fk!=='Semua Kelas')?`
   <div class="ttd-box">
-    <div>${CFG.LOKASI}, ${tglTtd}</div><div>Guru Mata Pelajaran</div>
+    <div>${CFG.LOKASI}, ${tglTtd}</div><div>Wali Kelas ${fk}</div>
     <div><span class="garis"></span></div>
-    <div class="ttd-nama">${fg||'___________________'}</div><div class="ttd-nip">&nbsp;</div>
-  </div>
+    <div class="ttd-nama">${(dWaliKelas[fk]&&dWaliKelas[fk].nama)||'___________________'}</div>
+    <div class="ttd-nip">${(dWaliKelas[fk]&&dWaliKelas[fk].nip)?'NIP. '+(dWaliKelas[fk].nip):''}</div>
+  </div>`:''}
 </div>
 <br><button class="np" onclick="window.print()" style="padding:9px 22px;background:#166534;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Cetak F4 Landscape</button>
 </body></html>`);
@@ -11835,7 +11839,12 @@ async function ttLoadData(forceRefresh){
 }
 
 function ttPopulateKelas(){
-  const kelas=[...new Set(dSiswa.map(s=>s.kelas))].sort(sortKelas);
+  let kelas=[...new Set(dSiswa.map(s=>s.kelas))].sort(sortKelas);
+  // Fallback: jika dSiswa belum diload, ambil kelas dari jadwal
+  if(!kelas.length){
+    const srcJadwal = dJadwal.length > 0 ? dJadwal : DATA_JADWAL_LOKAL;
+    kelas=[...new Set(srcJadwal.map(j=>j.kelas))].sort(sortKelas);
+  }
   ['tt-kelas','tt-rkelas','tt-ind-kelas-sel'].forEach(id=>{
     const sel=$(id);
     if(!sel) return;
@@ -11922,6 +11931,20 @@ async function ttSubmit(){
     toast('Submit gagal — cek koneksi');
   }
   btn.disabled=false; btn.textContent='Submit';
+}
+
+// Fetch wali kelas dari sheet WALAS
+let dWaliKelas = {}; // cache: {kelas: {nama, nip}}
+async function loadWaliKelas(){
+  if(Object.keys(dWaliKelas).length) return dWaliKelas;
+  try{
+    const r=await fetch(CFG.APPS_SCRIPT_URL+'?action=getWalas');
+    const d=await r.json();
+    if(Array.isArray(d.data)){
+      d.data.forEach(w=>{ if(w.kelas) dWaliKelas[w.kelas]={nama:w.nama||w.wali||'',nip:w.nip||w.NIP||''}; });
+    }
+  }catch(e){ console.log('Gagal load WALAS:',e); }
+  return dWaliKelas;
 }
 
 async function ttRekapKelas(){
@@ -12168,10 +12191,13 @@ function setRModeTab(tab, btn){
 
 function rmkInitKelas(){
   const sel=$('rmk-kelas');
-  if(sel.options.length<=1){
-    const kelas=[...new Set((dData?.jadwal||[]).map(j=>j.kelas))].sort(sortKelas);
-    kelas.forEach(k=>sel.innerHTML+=`<option value="${k}">${k}</option>`);
-  }
+  const prev=sel.value;
+  // Selalu isi ulang agar tidak kosong jika dJadwal baru selesai diload
+  const srcJadwal = dJadwal.length > 0 ? dJadwal : DATA_JADWAL_LOKAL;
+  const kelas=[...new Set(srcJadwal.map(j=>j.kelas))].sort(sortKelas);
+  sel.innerHTML='<option value="">-- Pilih Kelas --</option>';
+  kelas.forEach(k=>sel.innerHTML+=`<option value="${k}">${k}</option>`);
+  if(prev) sel.value=prev; // pertahankan pilihan sebelumnya jika ada
   if(!$('rmk-dari').value){
     const d=new Date(), day=d.getDay()||7;
     const mon=new Date(d); mon.setDate(d.getDate()-(day-1));
