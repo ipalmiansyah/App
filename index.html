@@ -10904,7 +10904,7 @@ function goto(name){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('aktif'));
   $('pg-'+name).classList.add('aktif'); $('nv-'+name).classList.add('aktif');
   if(name==='monitor') renderMonitor();
-  if(name==='rekap'){ fillFilters(); renderRekap(); }
+  if(name==='rekap'){ fillFilters(); renderRekap(); rmkInitKelas(); }
   if(name==='bel') initBelMenu();
 }
 function cekGPS(){
@@ -10950,7 +10950,7 @@ async function loadData(){
     if(!dInsidental.length) dInsidental=[];
     if(!dPenanganan.length) dPenanganan=[];
   }
-  renderRiwayat(); fillFilters();
+  renderRiwayat(); fillFilters(); rmkInitKelas();
   if($('pg-monitor').classList.contains('aktif')) renderMonitor();
 }
 
