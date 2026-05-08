@@ -10248,34 +10248,59 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 
     <div class="page" id="pg-rekap">
       <div class="rekap-mode">
-        <button class="btn-mode aktif" onclick="setRMode('minggu',this)">Mingguan</button>
-        <button class="btn-mode" onclick="setRMode('bulan',this)">Bulanan</button>
-        <button class="btn-mode" onclick="setRMode('custom',this)">Custom</button>
+        <button class="btn-mode aktif" id="rm-guru" onclick="setRModeTab('guru',this)">👤 Per Guru</button>
+        <button class="btn-mode" id="rm-kelas" onclick="setRModeTab('kelas',this)">🏫 Per Kelas</button>
       </div>
-      <div id="rnav-minggu"><div class="week-nav"><button class="btn-wk" onclick="gantiMinggu(-1)">&#8592;</button><span class="wk-lbl" id="wk-lbl">Minggu Ini</span><button class="btn-wk" onclick="gantiMinggu(1)">&#8594;</button></div></div>
-      <div id="rnav-bulan" style="display:none"><div class="week-nav"><button class="btn-wk" onclick="gantiBulan(-1)">&#8592;</button><span class="wk-lbl" id="bulan-lbl">Bulan Ini</span><button class="btn-wk" onclick="gantiBulan(1)">&#8594;</button></div></div>
-      <div id="rnav-custom" style="display:none">
-        <div class="date-range"><input type="date" id="c-dari"><span>s.d.</span><input type="date" id="c-sampai"></div>
-        <button class="btn-sub hijau" style="margin-bottom:10px" onclick="renderRekap()">Tampilkan</button>
+
+      <!-- ── TAB PER GURU (existing) ── -->
+      <div id="rt-guru">
+        <div class="rekap-mode" style="margin-top:4px;">
+          <button class="btn-mode aktif" onclick="setRMode('minggu',this)">Mingguan</button>
+          <button class="btn-mode" onclick="setRMode('bulan',this)">Bulanan</button>
+          <button class="btn-mode" onclick="setRMode('custom',this)">Custom</button>
+        </div>
+        <div id="rnav-minggu"><div class="week-nav"><button class="btn-wk" onclick="gantiMinggu(-1)">&#8592;</button><span class="wk-lbl" id="wk-lbl">Minggu Ini</span><button class="btn-wk" onclick="gantiMinggu(1)">&#8594;</button></div></div>
+        <div id="rnav-bulan" style="display:none"><div class="week-nav"><button class="btn-wk" onclick="gantiBulan(-1)">&#8592;</button><span class="wk-lbl" id="bulan-lbl">Bulan Ini</span><button class="btn-wk" onclick="gantiBulan(1)">&#8594;</button></div></div>
+        <div id="rnav-custom" style="display:none">
+          <div class="date-range"><input type="date" id="c-dari"><span>s.d.</span><input type="date" id="c-sampai"></div>
+          <button class="btn-sub hijau" style="margin-bottom:10px" onclick="renderRekap()">Tampilkan</button>
+        </div>
+        <div class="rekap-filter">
+          <select class="f-sel" id="f-guru" onchange="renderRekap()"><option value="">Semua Guru</option></select>
+          <select class="f-sel" id="f-kelas" onchange="renderRekap()"><option value="">Semua Kelas</option></select>
+          <select class="f-sel" id="f-hari" onchange="renderRekap()"><option value="">Semua Hari</option><option>Senin</option><option>Selasa</option><option>Rabu</option><option>Kamis</option><option>Jumat</option><option>Sabtu</option></select>
+        </div>
+        <div class="sum-row">
+          <div class="sum-card ok"><div class="sum-n" id="sm-ok">0</div><div class="sum-l">Terlaksana</div></div>
+          <div class="sum-card pr"><div class="sum-n" id="sm-pr">0</div><div class="sum-l">Kegiatan</div></div>
+          <div class="sum-card ms"><div class="sum-n" id="sm-ms">0</div><div class="sum-l">Kosong</div></div>
+        </div>
+        <div style="background:var(--g-bg);border:1px solid var(--g-bd);border-radius:10px;padding:8px 14px;text-align:center;font-size:13px;font-weight:800;color:var(--g3);margin-bottom:10px">
+          Persentase Terlaksana: <span id="persen-terlaksana" style="font-size:16px">— %</span>
+        </div>
+        <div class="rekap-list" id="rekap-list"></div>
+        <button class="btn-cetak" onclick="cetakRekap()">
+          <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Cetak Rekap (F4 Landscape)
+        </button>
       </div>
-      <div class="rekap-filter">
-        <select class="f-sel" id="f-guru" onchange="renderRekap()"><option value="">Semua Guru</option></select>
-        <select class="f-sel" id="f-kelas" onchange="renderRekap()"><option value="">Semua Kelas</option></select>
-        <select class="f-sel" id="f-hari" onchange="renderRekap()"><option value="">Semua Hari</option><option>Senin</option><option>Selasa</option><option>Rabu</option><option>Kamis</option><option>Jumat</option><option>Sabtu</option></select>
+
+      <!-- ── TAB PER KELAS ── -->
+      <div id="rt-kelas" style="display:none;flex-direction:column;gap:8px;">
+        <div style="display:flex;flex-direction:column;gap:6px;padding-top:4px;">
+          <select id="rmk-kelas" style="padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;background:var(--card);color:var(--teks1);font-family:var(--font);">
+            <option value="">-- Pilih Kelas --</option>
+          </select>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="date" id="rmk-dari" style="flex:1;padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--card);color:var(--teks1);">
+            <span style="color:var(--teks3);font-size:12px;">s.d.</span>
+            <input type="date" id="rmk-sampai" style="flex:1;padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--card);color:var(--teks1);">
+          </div>
+          <button onclick="rmkTampilkan()" style="padding:10px;border-radius:10px;border:none;background:var(--g4);color:#fff;font-weight:800;font-size:13px;cursor:pointer;font-family:var(--font);">Tampilkan</button>
+        </div>
+        <div id="rmk-result" style="flex:1;overflow:auto;"></div>
+        <button id="rmk-btn-cetak" onclick="rmkCetak()" style="display:none;padding:10px;border-radius:10px;border:none;background:#1e293b;color:#fff;font-weight:700;font-size:13px;cursor:pointer;">🖨️ Cetak PDF</button>
       </div>
-      <div class="sum-row">
-        <div class="sum-card ok"><div class="sum-n" id="sm-ok">0</div><div class="sum-l">Terlaksana</div></div>
-        <div class="sum-card pr"><div class="sum-n" id="sm-pr">0</div><div class="sum-l">Kegiatan</div></div>
-        <div class="sum-card ms"><div class="sum-n" id="sm-ms">0</div><div class="sum-l">Kosong</div></div>
-      </div>
-      <div style="background:var(--g-bg);border:1px solid var(--g-bd);border-radius:10px;padding:8px 14px;text-align:center;font-size:13px;font-weight:800;color:var(--g3);margin-bottom:10px">
-        Persentase Terlaksana: <span id="persen-terlaksana" style="font-size:16px">— %</span>
-      </div>
-      <div class="rekap-list" id="rekap-list"></div>
-      <button class="btn-cetak" onclick="cetakRekap()">
-        <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        Cetak Rekap (F4 Landscape)
-      </button>
     </div>
 
     <!-- PAGE BEL -->
@@ -12122,7 +12147,176 @@ function ttGoto(sub){
   }
 }
 
-// Override goto untuk load data TT saat buka tab
+// ── REKAP PER KELAS ──
+let rmkData = null;
+
+function setRModeTab(tab, btn){
+  document.querySelectorAll('#pg-rekap > .rekap-mode .btn-mode').forEach(b=>b.classList.remove('aktif'));
+  btn.classList.add('aktif');
+  $('rt-guru').style.display = tab==='guru' ? '' : 'none';
+  $('rt-kelas').style.display = tab==='kelas' ? 'flex' : 'none';
+  if(tab==='kelas') rmkInitKelas();
+}
+
+function rmkInitKelas(){
+  const sel=$('rmk-kelas');
+  if(sel.options.length<=1){
+    const kelas=[...new Set((dData?.jadwal||[]).map(j=>j.kelas))].sort(sortKelas);
+    kelas.forEach(k=>sel.innerHTML+=`<option value="${k}">${k}</option>`);
+  }
+  if(!$('rmk-dari').value){
+    const d=new Date(), day=d.getDay()||7;
+    const mon=new Date(d); mon.setDate(d.getDate()-(day-1));
+    const sat=new Date(mon); sat.setDate(mon.getDate()+5);
+    $('rmk-dari').value=mon.toISOString().slice(0,10);
+    $('rmk-sampai').value=sat.toISOString().slice(0,10);
+  }
+}
+
+function isoToSlash(iso){ const[y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function slashToLabel(s){
+  const[d,m,y]=s.split('/');
+  return new Date(y,m-1,d).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+}
+
+async function rmkTampilkan(){
+  const kelas=$('rmk-kelas').value;
+  const dari=isoToSlash($('rmk-dari').value);
+  const sampai=isoToSlash($('rmk-sampai').value);
+  if(!kelas||!dari||!sampai){ toast('Pilih kelas dan rentang tanggal'); return; }
+  const res=$('rmk-result');
+  res.innerHTML='<div style="text-align:center;padding:24px;color:var(--teks3)">Memuat...</div>';
+  $('rmk-btn-cetak').style.display='none';
+  try{
+    const r=await fetch(CFG.APPS_SCRIPT_URL+`?action=getRekapMingguan&kelas=${encodeURIComponent(kelas)}&dari=${encodeURIComponent(dari)}&sampai=${encodeURIComponent(sampai)}`);
+    const d=await r.json();
+    rmkData={...d,kelas,dari,sampai};
+    if(!d.rows||!d.rows.length){ res.innerHTML='<div style="text-align:center;padding:24px;color:var(--teks3)">Tidak ada data jadwal</div>'; return; }
+    res.innerHTML=rmkRenderHTML(d);
+    $('rmk-btn-cetak').style.display='block';
+  }catch(e){ res.innerHTML='<div style="color:var(--merah);padding:12px;">Gagal load data</div>'; }
+}
+
+function rmkRenderHTML(d){
+  const rows=d.rows||[];
+  const hariMap={};
+  rows.forEach(r=>{ if(!hariMap[r.tgl]) hariMap[r.tgl]=[]; hariMap[r.tgl].push(r); });
+  let html='';
+  Object.keys(hariMap).sort().forEach(tgl=>{
+    const list=hariMap[tgl];
+    html+=`<div style="margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:800;color:var(--g4);padding:6px 0 4px;">${list[0].hari}</div>
+      <div style="background:var(--card);border-radius:10px;overflow:hidden;">`;
+    list.forEach(r=>{
+      const ok=r.terlaksana;
+      html+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);">
+        <div style="min-width:18px;text-align:center;font-size:11px;font-weight:700;color:var(--teks3);">${r.sesi}</div>
+        <div style="min-width:88px;font-size:10px;font-family:var(--mono);color:var(--teks3);">${r.jam}</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:var(--teks1);">${r.namaGuru}</div>
+          <div style="font-size:10px;color:var(--teks3);">${r.namaMapel} · ${r.jp} JP</div>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:${ok?'#16a34a':'#dc2626'}">${ok?'✅':'❌'}</div>
+      </div>`;
+    });
+    html+='</div></div>';
+  });
+  const rekap=d.rekap||[];
+  if(rekap.length){
+    html+=`<div style="margin-top:8px;">
+      <div style="font-size:12px;font-weight:800;color:var(--teks2);padding:4px 0 6px;">📊 Rekap Per Mapel</div>
+      <div style="background:var(--card);border-radius:10px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:1fr 36px 56px 40px 40px;padding:6px 12px;font-size:10px;font-weight:800;color:var(--teks3);border-bottom:1px solid var(--border);">
+          <div>Mapel</div><div style="text-align:center">Total</div><div style="text-align:center">Terlaksana</div><div style="text-align:center">Tdk</div><div style="text-align:center">%</div>
+        </div>`;
+    rekap.forEach(r=>{
+      const clr=r.persen>=75?'#16a34a':r.persen>=50?'#d97706':'#dc2626';
+      html+=`<div style="display:grid;grid-template-columns:1fr 36px 56px 40px 40px;padding:7px 12px;border-bottom:1px solid var(--border);font-size:12px;">
+        <div style="font-weight:700;color:var(--teks1);">${r.nama}</div>
+        <div style="text-align:center;color:var(--teks2);">${r.total}</div>
+        <div style="text-align:center;color:#16a34a;font-weight:700;">${r.terlaksana}</div>
+        <div style="text-align:center;color:#dc2626;">${r.tidakTerlaksana}</div>
+        <div style="text-align:center;font-weight:800;color:${clr};">${r.persen}%</div>
+      </div>`;
+    });
+    const pTotal=d.totalJP>0?Math.round(d.totalTerlaksana/d.totalJP*100):0;
+    html+=`<div style="display:grid;grid-template-columns:1fr 36px 56px 40px 40px;padding:8px 12px;font-size:12px;font-weight:900;background:rgba(0,0,0,0.08);">
+      <div>TOTAL</div><div style="text-align:center;">${d.totalJP}</div>
+      <div style="text-align:center;color:#16a34a;">${d.totalTerlaksana}</div>
+      <div style="text-align:center;color:#dc2626;">${d.totalJP-d.totalTerlaksana}</div>
+      <div style="text-align:center;color:${pTotal>=75?'#16a34a':pTotal>=50?'#d97706':'#dc2626'};">${pTotal}%</div>
+    </div></div></div>`;
+  }
+  return html;
+}
+
+function rmkCetak(){
+  if(!rmkData) return;
+  const {rows,rekap,kelas,dari,sampai,wali,waliNip,totalJP,totalTerlaksana}=rmkData;
+  const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  const periodeLabel=`${slashToLabel(dari)} s.d. ${slashToLabel(sampai)}`;
+  const pTotal=totalJP>0?Math.round(totalTerlaksana/totalJP*100):0;
+  const hariMap={};
+  rows.forEach(r=>{ if(!hariMap[r.tgl]) hariMap[r.tgl]=[]; hariMap[r.tgl].push(r); });
+  let tblRows='';
+  Object.keys(hariMap).sort().forEach(tgl=>{
+    const list=hariMap[tgl];
+    list.forEach((r,i)=>{
+      const ok=r.terlaksana;
+      tblRows+=`<tr>
+        ${i===0?`<td rowspan="${list.length}" class="merge">${list[0].hari}</td>`:''}
+        <td style="text-align:center">${r.sesi}</td>
+        <td style="white-space:nowrap">${r.jam}</td>
+        <td>${r.namaGuru}</td>
+        <td style="text-align:center">${r.namaMapel}</td>
+        <td style="text-align:center">${r.jp} JP</td>
+        <td style="text-align:center;color:${ok?'#166534':'#dc2626'};font-weight:700;">${ok?'Terlaksana':'Tidak'}</td>
+      </tr>`;
+    });
+  });
+  const rekapRows=(rekap||[]).map(r=>`<tr>
+    <td>${r.nama}</td><td style="text-align:center">${r.total} JP</td>
+    <td style="text-align:center;color:#166534;font-weight:700">${r.terlaksana} JP</td>
+    <td style="text-align:center;color:#dc2626">${r.tidakTerlaksana} JP</td>
+    <td style="text-align:center;font-weight:800;color:${r.persen>=75?'#166534':r.persen>=50?'#92400e':'#dc2626'}">${r.persen}%</td>
+  </tr>`).join('');
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rekap Kelas ${kelas}</title>
+  ${ttStyleHTML()}<style>table.tbl th,table.tbl td{font-size:10px;padding:3px 5px;}.merge{vertical-align:middle;text-align:center;font-weight:800;}</style>
+  </head><body>${ttKopHTML()}
+  <h4>REKAP KEHADIRAN MENGAJAR</h4>
+  <p style="text-align:center;margin:2px 0;">Tahun Ajaran 2025/2026</p>
+  <table class="info" style="margin:8px 0;">
+    <tr><td>Kelas</td><td>: <b>${kelas}</b></td></tr>
+    <tr><td>Periode</td><td>: ${periodeLabel}</td></tr>
+    <tr><td>Wali Kelas</td><td>: ${wali||'-'}</td></tr>
+  </table>
+  <table class="tbl"><thead><tr>
+    <th>Hari</th><th>Sesi</th><th>Jam</th><th>Nama Guru</th><th>Mapel</th><th>JP</th><th>Keterangan</th>
+  </tr></thead><tbody>${tblRows}</tbody></table>
+  <p style="margin:10px 0 4px;font-weight:800;font-size:11px;">Rekap Per Mata Pelajaran:</p>
+  <table class="tbl"><thead><tr>
+    <th>Mata Pelajaran</th><th>Total JP</th><th>Terlaksana</th><th>Tidak Terlaksana</th><th>%</th>
+  </tr></thead><tbody>${rekapRows}
+  <tr style="font-weight:900;background:#f0f0f0;">
+    <td>TOTAL</td><td style="text-align:center">${totalJP} JP</td>
+    <td style="text-align:center;color:#166534">${totalTerlaksana} JP</td>
+    <td style="text-align:center;color:#dc2626">${totalJP-totalTerlaksana} JP</td>
+    <td style="text-align:center;font-weight:900">${pTotal}%</td>
+  </tr></tbody></table>
+  <div class="ttd">
+    <div class="ttd-box"><p>Mengetahui,</p><p>Kepala SMP Negeri 5 Sarolangun</p>
+    <div class="space"></div><p><b>Sukardiman, M.Pd.</b></p><p>NIP. 197512102003121004</p></div>
+    <div class="ttd-box"><p>Mengetahui,</p><p>Wakil Kurikulum</p>
+    <div class="space"></div><p><b>Ratmi Winasih, S.Pt</b></p><p>NIP. 197910112007012018</p></div>
+    <div class="ttd-box"><p>Sarolangun, ${tglCetak}</p><p>Wali Kelas ${kelas}</p>
+    <div class="space"></div><p><b>${wali||'_______________'}</b></p>${waliNip?`<p>NIP. ${waliNip}</p>`:''}</div>
+  </div></body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),500);
+}
+// ── END REKAP PER KELAS ──
+
 const _origGoto=goto;
 goto=function(pg){
   _origGoto(pg);
