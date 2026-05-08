@@ -12123,6 +12123,7 @@ function ttCetakPDF(){
   ${!rows.length?'<tr><td colspan="6" style="text-align:center">-</td></tr>':''}
   </tbody></table>
   <div class="total">Total Poin: ${total}</div>
+  </div><!-- end rekap-mapel-section -->
   <div class="ttd">
     <div class="ttd-box"><p>Mengetahui,</p><p>Kepala SMP Negeri 5 Sarolangun</p>
     <div class="space"></div><p><b>Sukardiman, M.Pd.</b></p><p>NIP. 197512102003121004</p></div>
@@ -12149,6 +12150,7 @@ function ttCetakPDFKelas(){
   </tr></thead><tbody>
   ${dRekapKelasData.map((s,i)=>`<tr><td style="text-align:center">${i+1}</td><td>${s.nama}</td><td style="text-align:center">${s.totalPoin}</td></tr>`).join('')}
   </tbody></table>
+  </div><!-- end rekap-mapel-section -->
   <div class="ttd">
     <div class="ttd-box"><p>Mengetahui,</p><p>Kepala SMP Negeri 5 Sarolangun</p>
     <div class="space"></div><p><b>Sukardiman, M.Pd.</b></p><p>NIP. 197512102003121004</p></div>
@@ -12286,9 +12288,32 @@ function rmkRenderHTML(d){
 
 function rmkCetak(){
   if(!rmkData) return;
-  const {rows,rekap,kelas,dari,sampai,wali,waliNip,totalJP,totalTerlaksana}=rmkData;
+  let {rows,rekap,kelas,dari,sampai,wali,waliNip,totalJP,totalTerlaksana}=rmkData;
   const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
   const periodeLabel=`${slashToLabel(dari)} s.d. ${slashToLabel(sampai)}`;
+
+  // Fallback: jp null → 1 JP per sesi
+  rows = rows.map(r=>({...r, jp: (r.jp==null||r.jp===''||isNaN(r.jp)) ? 1 : Number(r.jp)}));
+
+  // Hitung ulang totalJP & totalTerlaksana dari rows jika dari server null
+  if(!totalJP || totalJP===0){
+    totalJP = rows.reduce((s,r)=>s+r.jp, 0);
+    totalTerlaksana = rows.filter(r=>r.terlaksana).reduce((s,r)=>s+r.jp, 0);
+  }
+
+  // Hitung ulang rekap per mapel dari rows jika nilai null
+  if(rekap && rekap.length){
+    rekap = rekap.map(r=>{
+      if(r.total==null||isNaN(r.total)){
+        const rRows = rows.filter(x=>x.namaMapel===r.nama);
+        const tot = rRows.reduce((s,x)=>s+x.jp, 0);
+        const ter = rRows.filter(x=>x.terlaksana).reduce((s,x)=>s+x.jp, 0);
+        return {...r, total:tot, terlaksana:ter, tidakTerlaksana:tot-ter, persen:tot>0?Math.round(ter/tot*100):0};
+      }
+      return r;
+    });
+  }
+
   const pTotal=totalJP>0?Math.round(totalTerlaksana/totalJP*100):0;
   const hariMap={};
   rows.forEach(r=>{ if(!hariMap[r.tgl]) hariMap[r.tgl]=[]; hariMap[r.tgl].push(r); });
@@ -12316,7 +12341,20 @@ function rmkCetak(){
   </tr>`).join('');
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rekap Kelas ${kelas}</title>
-  ${ttStyleHTML()}<style>table.tbl th,table.tbl td{font-size:10px;padding:3px 5px;}.merge{vertical-align:middle;text-align:center;font-weight:800;}</style>
+  ${ttStyleHTML()}<style>
+    table.tbl th,table.tbl td{font-size:10px;padding:3px 5px;}
+    .merge{vertical-align:middle;text-align:center;font-weight:800;}
+    /* lebar kolom tabel utama */
+    table.tbl col.col-hari  {width:70px;}
+    table.tbl col.col-sesi  {width:32px;}
+    table.tbl col.col-jam   {width:70px;}
+    table.tbl col.col-guru  {width:auto;}
+    table.tbl col.col-mapel {width:90px;}
+    table.tbl col.col-jp    {width:32px;}
+    table.tbl col.col-ket   {width:65px;}
+    /* Rekap Per Mapel selalu mulai halaman baru */
+    .rekap-mapel-section{page-break-before:always;}
+  </style>
   </head><body>${ttKopHTML()}
   <h4>REKAP KEHADIRAN MENGAJAR</h4>
   <p style="text-align:center;margin:2px 0;">Tahun Ajaran 2025/2026</p>
@@ -12325,9 +12363,13 @@ function rmkCetak(){
     <tr><td>Periode</td><td>: ${periodeLabel}</td></tr>
     <tr><td>Wali Kelas</td><td>: ${wali||'-'}</td></tr>
   </table>
-  <table class="tbl"><thead><tr>
-    <th>Hari</th><th>Sesi</th><th>Jam</th><th>Nama Guru</th><th>Mapel</th><th>JP</th><th>Keterangan</th>
+  <table class="tbl"><colgroup>
+    <col class="col-hari"><col class="col-sesi"><col class="col-jam">
+    <col class="col-guru"><col class="col-mapel"><col class="col-jp"><col class="col-ket">
+  </colgroup><thead><tr>
+    <th>Hari/Tanggal</th><th>Sesi</th><th>Jam</th><th>Nama Guru</th><th>Mapel</th><th>JP</th><th>Keterangan</th>
   </tr></thead><tbody>${tblRows}</tbody></table>
+  <div class="rekap-mapel-section">
   <p style="margin:10px 0 4px;font-weight:800;font-size:11px;">Rekap Per Mata Pelajaran:</p>
   <table class="tbl"><thead><tr>
     <th>Mata Pelajaran</th><th>Total JP</th><th>Terlaksana</th><th>Tidak Terlaksana</th><th>%</th>
@@ -12338,6 +12380,7 @@ function rmkCetak(){
     <td style="text-align:center;color:#dc2626">${totalJP-totalTerlaksana} JP</td>
     <td style="text-align:center;font-weight:900">${pTotal}%</td>
   </tr></tbody></table>
+  </div><!-- end rekap-mapel-section -->
   <div class="ttd">
     <div class="ttd-box"><p>Mengetahui,</p><p>Kepala SMP Negeri 5 Sarolangun</p>
     <div class="space"></div><p><b>Sukardiman, M.Pd.</b></p><p>NIP. 197512102003121004</p></div>
