@@ -10338,6 +10338,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
         <button class="btn-tt-tab aktif" id="tt-tab-input" onclick="ttGoto('input')">✏️ Input</button>
         <button class="btn-tt-tab" id="tt-tab-kelas" onclick="ttGoto('kelas')">👥 Rekap Kelas</button>
         <button class="btn-tt-tab" id="tt-tab-individu" onclick="ttGoto('individu')">🔍 Rekap Individu</button>
+        <button class="btn-tt-tab" onclick="ttRefresh()" style="flex:0;padding:8px 10px;" title="Refresh data">🔄</button>
       </div>
 
       <!-- ── INPUT PELANGGARAN ── -->
@@ -11818,7 +11819,13 @@ function ttPopulatePelanggaran(){
   });
 }
 
-function ttPopulateGuruWali(){ /* guru wali otomatis dari guruLogin */ }
+function ttRefresh(){
+  try{ localStorage.removeItem(TT_CACHE_KEY); }catch(e){}
+  dTTLoaded=false;
+  dSiswa=[]; dTataTertib=[];
+  toast('🔄 Memuat ulang data...');
+  ttLoadData(true);
+}
 
 function ttLoadSiswa(){
   const kelas=$('tt-kelas').value;
