@@ -10007,7 +10007,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .cmh{background:#ede9fe;border:1px solid #c4b5fd;border-radius:6px;padding:4px 3px;}
 .ck{background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:4px 3px;}
 .cb{background:rgba(147,197,253,0.15);border:1px solid rgba(147,197,253,0.3);border-radius:6px;padding:4px 3px;}
-.ca{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:4px 3px;}
+.ca{background:#1d4ed8;border:1px solid #1e3a8a;border-radius:6px;padding:4px 3px;}
 @keyframes rp{0%,100%{background:#fee2e2}50%{background:#fecaca}}
 .cn{font-weight:800;font-size:10px;line-height:1.2;}.cp{font-size:9px;line-height:1.2;margin-top:1px;}.cj{font-family:var(--mono);font-size:8px;margin-top:2px;}
 .ch .cn{color:#15803d;}.ch .cp{color:#16a34a;}.ch .cj{color:#fbbf24;}
@@ -10015,7 +10015,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .cmh .cn{color:#5b21b6;}.cmh .cp{color:#6d28d9;}.cmh .cj{color:#7c3aed;font-size:7px;text-align:right;}
 .ck .cn{color:#92400e;}.ck .cp{color:#b45309;}
 .cb .cn{color:#1d4ed8;}.cb .cp{color:#2563eb;}
-.ca .cn{color:#94a3b8;}.ca .cp{color:#cbd5e1;}
+.ca .cn{color:#fff;font-weight:700;}.ca .cp{color:#bfdbfe;}
 
 .ckc{background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:4px 3px;}
 .ckc .cn{color:#b45309;font-weight:900;}
@@ -11562,20 +11562,57 @@ tr:nth-child(even) td{background:#f5f5f5}
 </div>
 <div class="persen">Persentase Keterlaksanaan: ${persen}% (${totT} dari ${totJ} jam terlaksana)</div>
 <div class="kc-info">⚡ Keluar Cepat (lebih dari 5 menit sebelum jam habis): ${totKC} kali</div>
-<table>
-  <thead><tr><th>No</th><th>Hari</th><th>Tanggal</th><th>Nama Guru</th><th>Kelas</th><th>Kode</th><th>Jam</th><th>Masuk</th><th>Keluar</th><th>Ket.</th><th>Keluar Cepat</th></tr></thead>
-  <tbody>${rows.map((r,i)=>`<tr>
-    <td style="text-align:center">${i+1}</td>
-    <td>${r.hari}</td><td style="white-space:nowrap">${r.tgl}</td>
-    <td>${r.namaGuru}</td><td style="text-align:center"><b>${r.kelas}</b></td>
-    <td style="text-align:center;font-family:monospace">${r.kodeTampil}</td>
-    <td style="text-align:center;font-family:monospace;font-size:9pt">${r.jamMulai}–${r.jamSelesai}</td>
-    <td style="text-align:center;font-family:monospace;color:#166534">${r.am}</td>
-    <td style="text-align:center;font-family:monospace;color:#ea580c">${r.ak}</td>
-    <td class="${r.klsCls}">${r.ket}</td>
-    <td style="text-align:center" class="kc">${r.kcFlag||'—'}</td>
-  </tr>`).join('')}</tbody>
-</table>
+<div id="tbl-wrap"></div>
+<script>
+(function(){
+  const diffHari=Math.round((new Date(sb)-new Date(sn))/(1000*60*60*24));
+  const wrap=document.getElementById('tbl-wrap');
+  if(diffHari<=7){
+    // Format mingguan — detail per tanggal
+    wrap.innerHTML=\`<table>
+  <thead><tr><th>No</th><th>Hari</th><th>Tanggal</th><th>Nama Guru</th><th>Kelas</th><th>Kode</th><th>Jam</th><th>Masuk</th><th>Keluar</th><th>Keterangan</th></tr></thead>
+  <tbody>\${rows.map((r,i)=>\`<tr>
+    <td style="text-align:center">\${i+1}</td>
+    <td>\${r.hari}</td><td style="white-space:nowrap">\${r.tgl}</td>
+    <td>\${r.namaGuru}</td><td style="text-align:center"><b>\${r.kelas}</b></td>
+    <td style="text-align:center;font-family:monospace">\${r.kodeTampil}</td>
+    <td style="text-align:center;font-family:monospace;font-size:9pt">\${r.jamMulai}–\${r.jamSelesai}</td>
+    <td style="text-align:center;font-family:monospace;color:#166534">\${r.am}</td>
+    <td style="text-align:center;font-family:monospace;color:#ea580c">\${r.ak}</td>
+    <td class="\${r.klsCls}">\${r.ket}</td>
+  </tr>\`).join('')}</tbody>
+</table>\`;
+  } else {
+    // Format bulanan/custom — diringkas per hari+sesi
+    const days=['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    const ringkasan={};
+    rows.forEach(r=>{
+      const key=r.hari+'|'+r.jamMulai+'|'+r.jamSelesai+'|'+r.namaGuru+'|'+r.kelas+'|'+r.kodeTampil;
+      if(!ringkasan[key]) ringkasan[key]={hari:r.hari,jamMulai:r.jamMulai,jamSelesai:r.jamSelesai,namaGuru:r.namaGuru,kelas:r.kelas,kodeTampil:r.kodeTampil,totalJP:0,terlaksana:0,tidakTerlaksana:0};
+      ringkasan[key].totalJP++;
+      if(r.klsCls==='ok'||r.klsCls==='kgi') ringkasan[key].terlaksana++;
+      else ringkasan[key].tidakTerlaksana++;
+    });
+    const sorted=Object.values(ringkasan).sort((a,b)=>{
+      const hd=days.indexOf(a.hari)-days.indexOf(b.hari);
+      return hd||pJam(a.jamMulai)-pJam(b.jamMulai);
+    });
+    wrap.innerHTML=\`<table>
+  <thead><tr><th>No</th><th>Hari</th><th>Nama Guru</th><th>Kelas</th><th>Kode</th><th>Jam</th><th>Total JP</th><th>Terlaksana</th><th>Tdk Terlaksana</th></tr></thead>
+  <tbody>\${sorted.map((r,i)=>\`<tr>
+    <td style="text-align:center">\${i+1}</td>
+    <td>\${r.hari}</td>
+    <td>\${r.namaGuru}</td><td style="text-align:center"><b>\${r.kelas}</b></td>
+    <td style="text-align:center;font-family:monospace">\${r.kodeTampil}</td>
+    <td style="text-align:center;font-family:monospace;font-size:9pt">\${r.jamMulai}–\${r.jamSelesai}</td>
+    <td style="text-align:center;font-weight:bold">\${r.totalJP} JP</td>
+    <td style="text-align:center;color:#166534;font-weight:bold">\${r.terlaksana} JP</td>
+    <td style="text-align:center;color:#dc2626;font-weight:bold">\${r.tidakTerlaksana} JP</td>
+  </tr>\`).join('')}</tbody>
+</table>\`;
+  }
+})();
+</script>
 <div class="ttd">
   <div class="ttd-box">
     <div>Mengetahui,</div><div>Kepala ${CFG.NAMA_SEKOLAH}</div>
