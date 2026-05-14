@@ -10295,6 +10295,11 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
             <input type="date" id="rmk-dari" style="flex:1;padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--card);color:var(--teks1);">
             <span style="color:var(--teks3);font-size:12px;">s.d.</span>
             <input type="date" id="rmk-sampai" style="flex:1;padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--card);color:var(--teks1);">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button onclick="setRmkRange('minggu')" style="flex:1;padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--teks2);font-size:11px;font-weight:700;cursor:pointer;">Minggu Ini</button>
+              <button onclick="setRmkRange('bulan')" style="flex:1;padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--teks2);font-size:11px;font-weight:700;cursor:pointer;">Bulan Ini</button>
+              <button onclick="setRmkRange('semester')" style="flex:1;padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--teks2);font-size:11px;font-weight:700;cursor:pointer;">Semester</button>
+            </div>
           </div>
           <button onclick="rmkTampilkan()" style="padding:10px;border-radius:10px;border:none;background:var(--g4);color:#fff;font-weight:800;font-size:13px;cursor:pointer;font-family:var(--font);">Tampilkan</button>
         </div>
@@ -11803,6 +11808,8 @@ const TT_CACHE_TTL=30*60*1000; // 30 menit
 
 // Load data saat tab dibuka pertama kali
 async function ttLoadData(forceRefresh){
+  // Isi pelapor segera dari guruLogin (tidak perlu tunggu fetch)
+  if(guruLogin?.nama) $('tt-pelapor-nama').textContent=guruLogin.nama;
   // Cek cache dulu
   if(!forceRefresh){
     try{
@@ -11835,7 +11842,12 @@ async function ttLoadData(forceRefresh){
     // Isi pelapor otomatis
     const nm=guruLogin?.nama||'';
     if(nm) $('tt-pelapor-nama').textContent=nm;
-  }catch(e){ toast('Gagal load data tata tertib'); }
+  }catch(e){
+    console.error('[TT] Gagal load data tata tertib:', e);
+    toast('Gagal load data tata tertib. Coba lagi...','err');
+    // Retry otomatis setelah 5 detik
+    setTimeout(()=>{ if(!dTTLoaded) ttLoadData(true); }, 5000);
+  }
 }
 
 function ttPopulateKelas(){
@@ -12191,6 +12203,32 @@ function setRModeTab(tab, btn){
   if(tab==='kelas') rmkInitKelas();
 }
 
+function setRmkRange(mode){
+  const now=new Date();
+  let dari, sampai;
+  if(mode==='minggu'){
+    const day=now.getDay()||7;
+    const mon=new Date(now); mon.setDate(now.getDate()-(day-1));
+    const sat=new Date(mon); sat.setDate(mon.getDate()+5);
+    dari=mon; sampai=sat;
+  } else if(mode==='bulan'){
+    dari=new Date(now.getFullYear(),now.getMonth(),1);
+    sampai=new Date(now.getFullYear(),now.getMonth()+1,0);
+  } else if(mode==='semester'){
+    // Semester 1: Juli-Des, Semester 2: Jan-Jun
+    const bln=now.getMonth();
+    if(bln>=6){ // Juli-Des = semester 1
+      dari=new Date(now.getFullYear(),6,1);
+      sampai=new Date(now.getFullYear(),11,31);
+    } else { // Jan-Jun = semester 2
+      dari=new Date(now.getFullYear(),0,1);
+      sampai=new Date(now.getFullYear(),5,30);
+    }
+  }
+  $('rmk-dari').value=dari.toISOString().slice(0,10);
+  $('rmk-sampai').value=sampai.toISOString().slice(0,10);
+}
+
 function rmkInitKelas(){
   const sel=$('rmk-kelas');
   const prev=sel.value;
@@ -12401,7 +12439,11 @@ function rmkCetak(){
 const _origGoto=goto;
 goto=function(pg){
   _origGoto(pg);
-  if(pg==='tt') ttLoadData();
+  if(pg==='tt'){
+    // Isi pelapor langsung dari guruLogin tanpa tunggu fetch
+    if(guruLogin?.nama) $('tt-pelapor-nama').textContent=guruLogin.nama;
+    ttLoadData();
+  }
 };
 </script>
 </body>
