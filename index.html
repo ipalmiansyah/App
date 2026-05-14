@@ -11814,6 +11814,12 @@ const TT_CACHE_KEY='tt_data_cache';
 const TT_CACHE_TTL=30*60*1000; // 30 menit
 
 // Load data saat tab dibuka pertama kali
+function ttPopulateGuruWali(){
+  // Isi nama pelapor dari guruLogin
+  const nm = guruLogin?.nama||'';
+  if(nm) $('tt-pelapor-nama').textContent=nm;
+}
+
 async function ttLoadData(forceRefresh){
   // Isi pelapor segera dari guruLogin (tidak perlu tunggu fetch)
   if(guruLogin?.nama) $('tt-pelapor-nama').textContent=guruLogin.nama;
