@@ -10259,7 +10259,11 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
           <button class="btn-mode" onclick="setRMode('bulan',this)">Bulanan</button>
           <button class="btn-mode" onclick="setRMode('custom',this)">Custom</button>
         </div>
-        <div id="rnav-minggu"><div class="week-nav"><button class="btn-wk" onclick="gantiMinggu(-1)">&#8592;</button><span class="wk-lbl" id="wk-lbl">Minggu Ini</span><button class="btn-wk" onclick="gantiMinggu(1)">&#8594;</button></div></div>
+        <button class="btn-cetak" onclick="cetakRekap()" style="margin-bottom:8px;">
+                <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                Cetak / Download PDF
+              </button>
+              <div id="rnav-minggu"><div class="week-nav"><button class="btn-wk" onclick="gantiMinggu(-1)">&#8592;</button><span class="wk-lbl" id="wk-lbl">Minggu Ini</span><button class="btn-wk" onclick="gantiMinggu(1)">&#8594;</button></div></div>
         <div id="rnav-bulan" style="display:none"><div class="week-nav"><button class="btn-wk" onclick="gantiBulan(-1)">&#8592;</button><span class="wk-lbl" id="bulan-lbl">Bulan Ini</span><button class="btn-wk" onclick="gantiBulan(1)">&#8594;</button></div></div>
         <div id="rnav-custom" style="display:none">
           <div class="date-range"><input type="date" id="c-dari"><span>s.d.</span><input type="date" id="c-sampai"></div>
@@ -10279,10 +10283,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
           Persentase Terlaksana: <span id="persen-terlaksana" style="font-size:16px">— %</span>
         </div>
         <div class="rekap-list" id="rekap-list"></div>
-        <button class="btn-cetak" onclick="cetakRekap()">
-          <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Cetak Rekap (F4 Landscape)
-        </button>
+        
       </div>
 
       <!-- ── TAB PER KELAS ── -->
@@ -10743,7 +10744,7 @@ const $  = id => document.getElementById(id);
 const ld = t  => { $('ld-txt').textContent=t||'Memproses...'; $('ld').classList.add('aktif'); };
 const ul = () => $('ld').classList.remove('aktif');
 const nowMin = () => { const d=new Date(); return d.getHours()*60+d.getMinutes(); };
-const pJam = s => { const[h,m]=s.split(':').map(Number); return h*60+m; };
+const pJam = s => { const n=(s||'00:00').replace('.',':'); const[h,m]=n.split(':').map(Number); return h*60+(m||0); };
 const hariIni = () => new Date().toLocaleDateString('id-ID',{weekday:'long'});
 const tglStr  = (d=new Date()) => d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'});
 const tglISO  = (d=new Date()) => d.toISOString().split('T')[0];
@@ -11501,10 +11502,12 @@ async function cetakRekap(){
         const am=dAbsensi.find(a=>a.kelas===j.kelas&&a.tanggal===tgl&&a.mode==='masuk'&&a.guru===j.namaGuru);
         const ak=dAbsensi.find(a=>a.kelas===j.kelas&&a.tanggal===tgl&&a.mode==='keluar'&&a.guru===j.namaGuru);
         const kgi=dInsidental.find(k=>k.tanggal===tgl&&k.status!=='BATAL'&&pJam(k.jamMulai)<=pJam(j.jamMulai)&&pJam(k.jamSelesai)>=pJam(j.jamSelesai));
+        const ditanganiRekap=dPenanganan.find(p=>p.kelas===j.kelas&&p.tanggal===tgl&&pJam(p.jamMulai)<=pJam(j.jamMulai)&&pJam(p.jamSelesai)>=pJam(j.jamSelesai)&&p.status!=='BATAL');
         const kc=ak&&isKeluarCepat(ak.jam,j.jamSelesai);
         let ket,klsCls,kcFlag='';
         if(kgi){ket=kgi.keterangan;klsCls='kgi';totK++;totT++;}
         else if(am){ket='Terlaksana';klsCls='ok';totT++;if(kc){totKC++;kcFlag='⚡';}}
+        else if(ditanganiRekap){ket='Ditangani: '+ditanganiRekap.guruPiket;klsCls='kgi';totT++;}
         else{ket='Tidak Terlaksana';klsCls='ms';totKos++;}
         rows.push({...j,tgl,hari,am:am?am.jam:'-',ak:ak?ak.jam:'-',ket,klsCls,kcFlag});
       });
@@ -11857,8 +11860,9 @@ async function ttLoadData(forceRefresh){
     if(nm) $('tt-pelapor-nama').textContent=nm;
   }catch(e){
     console.error('[TT] Gagal load data tata tertib:', e);
-    toast('Gagal load data tata tertib. Coba lagi...','err');
-    // Retry otomatis setelah 5 detik
+    // Retry diam-diam, notif hanya kalau gagal 3x
+    window._ttRetry=(window._ttRetry||0)+1;
+    if(window._ttRetry>=3) toast('Gagal load data tata tertib. Periksa koneksi.','err');
     setTimeout(()=>{ if(!dTTLoaded) ttLoadData(true); }, 5000);
   }
 }
