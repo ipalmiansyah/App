@@ -11563,56 +11563,6 @@ tr:nth-child(even) td{background:#f5f5f5}
 <div class="persen">Persentase Keterlaksanaan: ${persen}% (${totT} dari ${totJ} jam terlaksana)</div>
 <div class="kc-info">⚡ Keluar Cepat (lebih dari 5 menit sebelum jam habis): ${totKC} kali</div>
 <div id="tbl-wrap"></div>
-<script>
-(function(){
-  const diffHari=Math.round((new Date(sb)-new Date(sn))/(1000*60*60*24));
-  const wrap=document.getElementById('tbl-wrap');
-  if(diffHari<=7){
-    // Format mingguan — detail per tanggal
-    wrap.innerHTML=\`<table>
-  <thead><tr><th>No</th><th>Hari</th><th>Tanggal</th><th>Nama Guru</th><th>Kelas</th><th>Kode</th><th>Jam</th><th>Masuk</th><th>Keluar</th><th>Keterangan</th></tr></thead>
-  <tbody>\${rows.map((r,i)=>\`<tr>
-    <td style="text-align:center">\${i+1}</td>
-    <td>\${r.hari}</td><td style="white-space:nowrap">\${r.tgl}</td>
-    <td>\${r.namaGuru}</td><td style="text-align:center"><b>\${r.kelas}</b></td>
-    <td style="text-align:center;font-family:monospace">\${r.kodeTampil}</td>
-    <td style="text-align:center;font-family:monospace;font-size:9pt">\${r.jamMulai}–\${r.jamSelesai}</td>
-    <td style="text-align:center;font-family:monospace;color:#166534">\${r.am}</td>
-    <td style="text-align:center;font-family:monospace;color:#ea580c">\${r.ak}</td>
-    <td class="\${r.klsCls}">\${r.ket}</td>
-  </tr>\`).join('')}</tbody>
-</table>\`;
-  } else {
-    // Format bulanan/custom — diringkas per hari+sesi
-    const days=['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-    const ringkasan={};
-    rows.forEach(r=>{
-      const key=r.hari+'|'+r.jamMulai+'|'+r.jamSelesai+'|'+r.namaGuru+'|'+r.kelas+'|'+r.kodeTampil;
-      if(!ringkasan[key]) ringkasan[key]={hari:r.hari,jamMulai:r.jamMulai,jamSelesai:r.jamSelesai,namaGuru:r.namaGuru,kelas:r.kelas,kodeTampil:r.kodeTampil,totalJP:0,terlaksana:0,tidakTerlaksana:0};
-      ringkasan[key].totalJP++;
-      if(r.klsCls==='ok'||r.klsCls==='kgi') ringkasan[key].terlaksana++;
-      else ringkasan[key].tidakTerlaksana++;
-    });
-    const sorted=Object.values(ringkasan).sort((a,b)=>{
-      const hd=days.indexOf(a.hari)-days.indexOf(b.hari);
-      return hd||pJam(a.jamMulai)-pJam(b.jamMulai);
-    });
-    wrap.innerHTML=\`<table>
-  <thead><tr><th>No</th><th>Hari</th><th>Nama Guru</th><th>Kelas</th><th>Kode</th><th>Jam</th><th>Total JP</th><th>Terlaksana</th><th>Tdk Terlaksana</th></tr></thead>
-  <tbody>\${sorted.map((r,i)=>\`<tr>
-    <td style="text-align:center">\${i+1}</td>
-    <td>\${r.hari}</td>
-    <td>\${r.namaGuru}</td><td style="text-align:center"><b>\${r.kelas}</b></td>
-    <td style="text-align:center;font-family:monospace">\${r.kodeTampil}</td>
-    <td style="text-align:center;font-family:monospace;font-size:9pt">\${r.jamMulai}–\${r.jamSelesai}</td>
-    <td style="text-align:center;font-weight:bold">\${r.totalJP} JP</td>
-    <td style="text-align:center;color:#166534;font-weight:bold">\${r.terlaksana} JP</td>
-    <td style="text-align:center;color:#dc2626;font-weight:bold">\${r.tidakTerlaksana} JP</td>
-  </tr>\`).join('')}</tbody>
-</table>\`;
-  }
-})();
-</script>
 <div class="ttd">
   <div class="ttd-box">
     <div>Mengetahui,</div><div>Kepala ${CFG.NAMA_SEKOLAH}</div>
@@ -11635,6 +11585,42 @@ ${(fk&&fk!=='Semua Kelas')?`
 <br><button class="np" onclick="window.print()" style="padding:9px 22px;background:#166534;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Cetak F4 Landscape</button>
 </body></html>`);
   win.document.close();
+  // Render tabel setelah window terbuka
+  setTimeout(function(){
+    try{
+      var diffHari=Math.round((sb-sn)/(1000*60*60*24));
+      var wrap=win.document.getElementById('tbl-wrap');
+      if(!wrap) return;
+      var html='';
+      var days=['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+      if(diffHari<=7){
+        html+='<table><thead><tr><th>No</th><th>Hari</th><th>Tanggal</th><th>Nama Guru</th><th>Kelas</th><th>Kode</th><th>Jam</th><th>Masuk</th><th>Keluar</th><th>Keterangan</th></tr></thead><tbody>';
+        rows.forEach(function(r,i){
+          html+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+r.hari+'</td><td style="white-space:nowrap">'+r.tgl+'</td><td>'+r.namaGuru+'</td><td style="text-align:center"><b>'+r.kelas+'</b></td><td style="text-align:center;font-family:monospace">'+r.kodeTampil+'</td><td style="text-align:center;font-size:9pt">'+r.jamMulai+'-'+r.jamSelesai+'</td><td style="text-align:center;color:#166534">'+r.am+'</td><td style="text-align:center;color:#ea580c">'+r.ak+'</td><td class="'+r.klsCls+'">'+r.ket+'</td></tr>';
+        });
+        html+='</tbody></table>';
+      } else {
+        var rmap={};
+        rows.forEach(function(r){
+          var key=r.hari+'|'+r.jamMulai+'|'+r.jamSelesai+'|'+r.namaGuru+'|'+r.kelas+'|'+r.kodeTampil;
+          if(!rmap[key]) rmap[key]={hari:r.hari,jam:r.jamMulai+'-'+r.jamSelesai,namaGuru:r.namaGuru,kelas:r.kelas,kode:r.kodeTampil,tot:0,ter:0,tdk:0};
+          rmap[key].tot++;
+          if(r.klsCls==='ok'||r.klsCls==='kgi') rmap[key].ter++;
+          else rmap[key].tdk++;
+        });
+        var sorted=Object.values(rmap).sort(function(a,b){
+          var hd=days.indexOf(a.hari)-days.indexOf(b.hari);
+          return hd||(parseInt(a.jam)-parseInt(b.jam));
+        });
+        html+='<table><thead><tr><th>No</th><th>Hari</th><th>Nama Guru</th><th>Kelas</th><th>Kode</th><th>Jam</th><th>Total JP</th><th>Terlaksana</th><th>Tdk Terlaksana</th></tr></thead><tbody>';
+        sorted.forEach(function(r,i){
+          html+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+r.hari+'</td><td>'+r.namaGuru+'</td><td style="text-align:center"><b>'+r.kelas+'</b></td><td style="text-align:center;font-family:monospace">'+r.kode+'</td><td style="text-align:center">'+r.jam+'</td><td style="text-align:center;font-weight:bold">'+r.tot+' JP</td><td style="text-align:center;color:#166534;font-weight:bold">'+r.ter+' JP</td><td style="text-align:center;color:#dc2626;font-weight:bold">'+r.tdk+' JP</td></tr>';
+        });
+        html+='</tbody></table>';
+      }
+      wrap.innerHTML=html;
+    }catch(e){ console.error('Render tabel gagal:',e); }
+  },300);
 }
 
 // ── MENU BEL ──
