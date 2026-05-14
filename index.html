@@ -12436,7 +12436,8 @@ function rmkCetak(){
       });
     });
   }
-  const rekapRows=(rekap||[]).map(r=>`<tr>
+  const rekapRows=(rekap||[]).map((r,i)=>`<tr>
+    <td style="text-align:center">${i+1}</td>
     <td>${r.nama}</td><td style="text-align:center">${r.total} JP</td>
     <td style="text-align:center;color:#166534;font-weight:700">${r.terlaksana} JP</td>
     <td style="text-align:center;color:#dc2626">${r.tidakTerlaksana} JP</td>
@@ -12485,14 +12486,22 @@ function rmkCetak(){
   <div class="rekap-mapel-section">
   <p style="margin:10px 0 4px;font-weight:800;font-size:11px;">Rekap Per Mata Pelajaran:</p>
   <table class="tbl"><thead><tr>
-    <th>Mata Pelajaran</th><th>Total JP</th><th>Terlaksana</th><th>Tidak Terlaksana</th><th>%</th>
+    <th>No</th><th>Mata Pelajaran</th><th>Total JP</th><th>Terlaksana</th><th>Tidak Terlaksana</th><th>%</th>
   </tr></thead><tbody>${rekapRows}
   <tr style="font-weight:900;background:#f0f0f0;">
-    <td>TOTAL</td><td style="text-align:center">${totalJP} JP</td>
+    <td colspan="2">TOTAL</td><td style="text-align:center">${totalJP} JP</td>
     <td style="text-align:center;color:#166534">${totalTerlaksana} JP</td>
     <td style="text-align:center;color:#dc2626">${totalJP-totalTerlaksana} JP</td>
     <td style="text-align:center;font-weight:900">${pTotal}%</td>
   </tr></tbody></table>
+  <div class="ttd" style="margin-top:20px;">
+    <div class="ttd-box"><p>Mengetahui,</p><p>Kepala ${CFG.NAMA_SEKOLAH}</p>
+    <div class="space"></div><p><b>${CFG.KEPSEK}</b></p><p>NIP. ${CFG.KEPSEK_NIP}</p></div>
+    <div class="ttd-box"><p>Mengetahui,</p><p>Wakil Kurikulum</p>
+    <div class="space"></div><p><b>${CFG.KURIKULUM}</b></p><p>NIP. ${CFG.KURIKULUM_NIP}</p></div>
+    <div class="ttd-box"><p>${CFG.LOKASI}, ${tglCetak}</p><p>Wali Kelas ${kelas}</p>
+    <div class="space"></div><p><b>${wali||'_______________'}</b></p>${waliNip?`<p>NIP. ${waliNip}</p>`:''}</div>
+  </div>
   </div><!-- end rekap-mapel-section -->
 </body></html>`);
   w.document.close();
