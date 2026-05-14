@@ -10006,7 +10006,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .cm{background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;padding:4px 3px;animation:rp 2s ease-in-out infinite;cursor:pointer;}
 .cmh{background:#ede9fe;border:1px solid #c4b5fd;border-radius:6px;padding:4px 3px;}
 .ck{background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:4px 3px;}
-.cb{background:rgba(147,197,253,0.15);border:1px solid rgba(147,197,253,0.3);border-radius:6px;padding:4px 3px;}
+.cb{background:#1d4ed8;border:1px solid #1e3a8a;border-radius:6px;padding:4px 3px;}
 .ca{background:#1d4ed8;border:1px solid #1e3a8a;border-radius:6px;padding:4px 3px;}
 @keyframes rp{0%,100%{background:#fee2e2}50%{background:#fecaca}}
 .cn{font-weight:800;font-size:10px;line-height:1.2;}.cp{font-size:9px;line-height:1.2;margin-top:1px;}.cj{font-family:var(--mono);font-size:8px;margin-top:2px;}
@@ -10014,7 +10014,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .cm .cn{color:#b91c1c;}.cm .cp{color:#dc2626;}
 .cmh .cn{color:#5b21b6;}.cmh .cp{color:#6d28d9;}.cmh .cj{color:#7c3aed;font-size:7px;text-align:right;}
 .ck .cn{color:#92400e;}.ck .cp{color:#b45309;}
-.cb .cn{color:#1d4ed8;}.cb .cp{color:#2563eb;}
+.cb .cn{color:#fff;font-weight:700;}.cb .cp{color:#bfdbfe;}
 .ca .cn{color:#fff;font-weight:700;}.ca .cp{color:#bfdbfe;}
 
 .ckc{background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:4px 3px;}
@@ -12393,28 +12393,49 @@ function rmkCetak(){
   }
 
   const pTotal=totalJP>0?Math.round(totalTerlaksana/totalJP*100):0;
-  const hariMap={};
-  rows.forEach(r=>{ if(!hariMap[r.tgl]) hariMap[r.tgl]=[]; hariMap[r.tgl].push(r); });
+  // Hitung rentang hari
+  const tglDari=new Date(dari.split('/').reverse().join('-')+'T00:00:00');
+  const tglSampai=new Date(sampai.split('/').reverse().join('-')+'T00:00:00');
+  const diffHari=Math.round((tglSampai-tglDari)/(1000*60*60*24));
+  const hariUrut=['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
   let tblRows='';
-  Object.keys(hariMap).sort().forEach(tgl=>{
-    const list=hariMap[tgl];
-    list.forEach((r,i)=>{
-      const ok=r.terlaksana;
-      tblRows+=`<tr>
-        ${i===0?`<td rowspan="${list.length}" class="merge">${(()=>{
-  const parts=list[0].hari.split(',');
-  const nm=parts[0]||''; const tgl=(parts.slice(1).join(',').trim());
-  return `<span style="display:block;font-weight:900;">${nm}</span><span style="display:block;font-weight:400;font-size:9px;">${tgl}</span>`;
-})()}</td>`:''}
-        <td style="text-align:center">${r.sesi}</td>
-        <td style="white-space:nowrap">${r.jam}</td>
-        <td>${r.namaGuru}</td>
-        <td style="text-align:center">${r.namaMapel}</td>
-        <td style="text-align:center">${r.jp} JP</td>
-        <td style="text-align:center;color:${ok?'#166534':'#dc2626'};font-weight:700;">${ok?'Terlaksana':'Tidak'}</td>
-      </tr>`;
+  if(diffHari<=7){
+    // Format mingguan — detail per tanggal
+    const hariMap={};
+    rows.forEach(r=>{ if(!hariMap[r.tgl]) hariMap[r.tgl]=[]; hariMap[r.tgl].push(r); });
+    Object.keys(hariMap).sort().forEach(tgl=>{
+      const list=hariMap[tgl];
+      list.forEach((r,i)=>{
+        const ok=r.terlaksana;
+        const hariTgl=i===0?`<td rowspan="${list.length}" class="merge"><span style="display:block;font-weight:900;">${list[0].hari}</span><span style="display:block;font-weight:400;font-size:9px;">${tgl}</span></td>`:'';
+        tblRows+=`<tr>${hariTgl}<td style="text-align:center">${r.sesi}</td><td style="white-space:nowrap">${r.jam}</td><td>${r.namaGuru}</td><td style="text-align:center">${r.namaMapel}</td><td style="text-align:center">${r.jp} JP</td><td style="text-align:center;color:${ok?'#166534':'#dc2626'};font-weight:700;">${ok?'Terlaksana':'Tidak Terlaksana'}</td></tr>`;
+      });
     });
-  });
+  } else {
+    // Format bulanan/custom — diringkas per hari+sesi
+    const rmap={};
+    rows.forEach(r=>{
+      const key=r.hari+'|'+r.sesi+'|'+r.jam+'|'+r.namaGuru+'|'+r.namaMapel;
+      if(!rmap[key]) rmap[key]={hari:r.hari,sesi:r.sesi,jam:r.jam,namaGuru:r.namaGuru,namaMapel:r.namaMapel,tot:0,ter:0,tdk:0};
+      rmap[key].tot+=r.jp||1;
+      if(r.terlaksana) rmap[key].ter+=r.jp||1;
+      else rmap[key].tdk+=r.jp||1;
+    });
+    const sorted=Object.values(rmap).sort((a,b)=>{
+      const hd=hariUrut.indexOf(a.hari)-hariUrut.indexOf(b.hari);
+      return hd||(a.sesi-b.sesi);
+    });
+    // Group by hari untuk merge cell
+    const hariGrp={};
+    sorted.forEach(r=>{ if(!hariGrp[r.hari]) hariGrp[r.hari]=[]; hariGrp[r.hari].push(r); });
+    hariUrut.forEach(hari=>{
+      if(!hariGrp[hari]) return;
+      hariGrp[hari].forEach((r,i)=>{
+        const hariCell=i===0?`<td rowspan="${hariGrp[hari].length}" class="merge">${hari}</td>`:'';
+        tblRows+=`<tr>${hariCell}<td style="text-align:center">${r.sesi}</td><td style="white-space:nowrap">${r.jam}</td><td>${r.namaGuru}</td><td style="text-align:center">${r.namaMapel}</td><td style="text-align:center;font-weight:bold">${r.tot} JP</td><td style="text-align:center;color:#166534;font-weight:bold">${r.ter} JP</td><td style="text-align:center;color:#dc2626;font-weight:bold">${r.tdk} JP</td></tr>`;
+      });
+    });
+  }
   const rekapRows=(rekap||[]).map(r=>`<tr>
     <td>${r.nama}</td><td style="text-align:center">${r.total} JP</td>
     <td style="text-align:center;color:#166534;font-weight:700">${r.terlaksana} JP</td>
@@ -12448,9 +12469,19 @@ function rmkCetak(){
   <table class="tbl"><colgroup>
     <col class="col-hari"><col class="col-sesi"><col class="col-jam">
     <col class="col-guru"><col class="col-mapel"><col class="col-jp"><col class="col-ket">
+    ${diffHari>7?'<col class="col-ket"><col class="col-ket">':''}
   </colgroup><thead><tr>
-    <th>Hari/Tanggal</th><th>Sesi</th><th>Jam</th><th>Nama Guru</th><th>Mapel</th><th>JP</th><th>Keterangan</th>
+    <th>${diffHari>7?'Hari':'Hari/Tanggal'}</th><th>Sesi</th><th>Jam</th><th>Nama Guru</th><th>Mapel</th><th>${diffHari>7?'Total JP':'JP'}</th><th>${diffHari>7?'Terlaksana':'Keterangan'}</th>
+    ${diffHari>7?'<th>Tdk Terlaksana</th>':''}
   </tr></thead><tbody>${tblRows}</tbody></table>
+  <div class="ttd" style="margin-top:20px;">
+    <div class="ttd-box"><p>Mengetahui,</p><p>Kepala ${CFG.NAMA_SEKOLAH}</p>
+    <div class="space"></div><p><b>${CFG.KEPSEK}</b></p><p>NIP. ${CFG.KEPSEK_NIP}</p></div>
+    <div class="ttd-box"><p>Mengetahui,</p><p>Wakil Kurikulum</p>
+    <div class="space"></div><p><b>${CFG.KURIKULUM}</b></p><p>NIP. ${CFG.KURIKULUM_NIP}</p></div>
+    <div class="ttd-box"><p>${CFG.LOKASI}, ${tglCetak}</p><p>Wali Kelas ${kelas}</p>
+    <div class="space"></div><p><b>${wali||'_______________'}</b></p>${waliNip?`<p>NIP. ${waliNip}</p>`:''}</div>
+  </div>
   <div class="rekap-mapel-section">
   <p style="margin:10px 0 4px;font-weight:800;font-size:11px;">Rekap Per Mata Pelajaran:</p>
   <table class="tbl"><thead><tr>
@@ -12463,14 +12494,7 @@ function rmkCetak(){
     <td style="text-align:center;font-weight:900">${pTotal}%</td>
   </tr></tbody></table>
   </div><!-- end rekap-mapel-section -->
-  <div class="ttd">
-    <div class="ttd-box"><p>Mengetahui,</p><p>Kepala SMP Negeri 05 Sarolangun</p>
-    <div class="space"></div><p><b>Sukardiman, M.Pd.</b></p><p>NIP. 197512102003121004</p></div>
-    <div class="ttd-box"><p>Mengetahui,</p><p>Wakil Kurikulum</p>
-    <div class="space"></div><p><b>Ratmi Winasih, S.Pt</b></p><p>NIP. 197910112007012018</p></div>
-    <div class="ttd-box"><p>Sarolangun, ${tglCetak}</p><p>Wali Kelas ${kelas}</p>
-    <div class="space"></div><p><b>${wali||'_______________'}</b></p>${waliNip?`<p>NIP. ${waliNip}</p>`:''}</div>
-  </div></body></html>`);
+</body></html>`);
   w.document.close();
   setTimeout(()=>w.print(),500);
 }
