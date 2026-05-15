@@ -10851,9 +10851,8 @@ async function cekToken(){
 
 async function doRegistrasi(){
   const inp=$('reg-token');
-  if(!inp){ console.error('reg-token element tidak ditemukan!'); return; }
+  if(!inp){ alert('ERROR: reg-token tidak ditemukan!'); return; }
   const token=inp.value.trim().toUpperCase();
-  console.log('[REG] Token:', token, 'Length:', token.length);
   if(token.length<4){
     $('reg-err').style.display='block';
     $('reg-err').textContent='Token minimal 4 karakter!';
@@ -10861,6 +10860,8 @@ async function doRegistrasi(){
   }
   const errEl=$('reg-err');
   if(errEl) errEl.style.display='none';
+  // Tampilkan status di layar
+  if(errEl){ errEl.style.display='block'; errEl.style.color='#166534'; errEl.textContent='Menghubungi server...'; }
   ld('Memverifikasi token...');
   const deviceId=getDeviceId();
   console.log('[REG] DeviceId:', deviceId);
@@ -10888,8 +10889,7 @@ async function doRegistrasi(){
     }
   }catch(e){
     ul();
-    console.error('[REG] Error:', e);
-    if(errEl){ errEl.style.display='block'; errEl.textContent='Gagal: '+e.message; }
+    if(errEl){ errEl.style.display='block'; errEl.style.color='#dc2626'; errEl.textContent='Gagal: '+e.message; }
   }
 }
 
