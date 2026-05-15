@@ -12479,18 +12479,27 @@ function rmkCetak(){
       const list=hariMap[tgl];
       list.forEach((r,i)=>{
         const ok=r.terlaksana;
-        const hariTgl=i===0?`<td rowspan="${list.length}" class="merge"><span style="display:block;font-weight:900;">${list[0].hari}</span><span style="display:block;font-weight:400;font-size:9px;">${tgl}</span></td>`:'';
-        tblRows+=`<tr>${hariTgl}<td style="text-align:center">${r.sesi}</td><td style="white-space:nowrap">${r.jam}</td><td>${r.namaGuru}</td><td style="text-align:center">${r.namaMapel}</td><td style="text-align:center">${r.jp} JP</td><td style="text-align:center;color:${ok?'#166534':'#dc2626'};font-weight:700;">${ok?'Terlaksana':'Tidak Terlaksana'}</td></tr>`;
+        const hariNama=list[0].hari.split(',')[0].trim();
+        const hariTgl=i===0?`<td rowspan="${list.length}" class="merge"><span style="display:block;font-weight:900;">${hariNama}</span><span style="display:block;font-weight:400;font-size:9px;">${tgl}</span></td>`:'';
+        const ketRekap=r.terlaksana?'Terlaksana':(r.isInsidental?r.keterangan||'Insidental':'Tidak Terlaksana');
+        const ketColor=r.terlaksana?'#166534':(r.isInsidental?'#7c3aed':'#dc2626');
+        tblRows+=`<tr>${hariTgl}<td style="text-align:center">${r.sesi}</td><td style="white-space:nowrap">${r.jam}</td><td>${r.namaGuru}</td><td style="text-align:center">${r.namaMapel}</td><td style="text-align:center">${r.jp} JP</td><td style="text-align:center;color:${ketColor};font-weight:700;">${ketRekap}</td></tr>`;
       });
     });
   } else {
     // Format bulanan/custom — diringkas per hari+sesi
     const rmap={};
     rows.forEach(r=>{
-      const key=r.hari+'|'+r.sesi+'|'+r.jam+'|'+r.namaGuru+'|'+r.namaMapel;
-      if(!rmap[key]) rmap[key]={hari:r.hari,sesi:r.sesi,jam:r.jam,namaGuru:r.namaGuru,namaMapel:r.namaMapel,tot:0,ter:0,tdk:0};
-      rmap[key].tot+=r.jp||1;
+      // Ambil nama hari saja (format server: 'Kamis, 30 April 2026' → 'Kamis')
+      const hariPendek=r.hari.split(',')[0].trim();
+      const key=hariPendek+'|'+r.sesi+'|'+r.jam+'|'+r.namaGuru+'|'+r.namaMapel;
+      if(!rmap[key]) rmap[key]={hari:hariPendek,sesi:r.sesi,jam:r.jam,namaGuru:r.namaGuru,namaMapel:r.namaMapel,tot:0,ter:0,tdk:0,ins:0};
+      // Hitung hari efektif (kurangi libur)
+      const tglISO=(r.tgl||'').split('/').length===3?r.tgl.split('/')[2]+'-'+r.tgl.split('/')[1]+'-'+r.tgl.split('/')[0]:r.tgl;
+      const isLib=dLibur.some(l=>l.tanggal===tglISO);
+      if(!isLib) rmap[key].tot+=r.jp||1;
       if(r.terlaksana) rmap[key].ter+=r.jp||1;
+      else if(r.isInsidental) rmap[key].ins+=r.jp||1;
       else rmap[key].tdk+=r.jp||1;
     });
     const sorted=Object.values(rmap).sort((a,b)=>{
