@@ -11562,17 +11562,21 @@ async function cetakRekap(){
         totJ++;
         const am=dAbsensi.find(a=>a.kelas===j.kelas&&a.tanggal===tgl&&a.mode==='masuk'&&a.guru===j.namaGuru);
         const ak=dAbsensi.find(a=>a.kelas===j.kelas&&a.tanggal===tgl&&a.mode==='keluar'&&a.guru===j.namaGuru);
-        const kgi=dInsidental.find(k=>k.tanggal===tgl&&k.status!=='BATAL'&&pJam(k.jamMulai)<=pJam(j.jamMulai)&&pJam(k.jamSelesai)>=pJam(j.jamSelesai));
+        // Insidental tertentu untuk guru ini
+        const kgiTertentu=dInsidental.find(k=>k.tanggal===tgl&&k.status!=='BATAL'&&k.berlakuUntuk==='tertentu'&&k.namaGuru===j.namaGuru&&pJam(k.jamMulai)<=pJam(j.jamMulai)&&pJam(k.jamSelesai)>=pJam(j.jamSelesai));
+        // Insidental semua (rapat dll)
+        const kgiSemua=dInsidental.find(k=>k.tanggal===tgl&&k.status!=='BATAL'&&(k.berlakuUntuk||'semua')==='semua'&&pJam(k.jamMulai)<=pJam(j.jamMulai)&&pJam(k.jamSelesai)>=pJam(j.jamSelesai));
         const ditanganiRekap=dPenanganan.find(p=>p.kelas===j.kelas&&p.tanggal===tgl&&pJam(p.jamMulai)<=pJam(j.jamMulai)&&pJam(p.jamSelesai)>=pJam(j.jamSelesai)&&p.status!=='BATAL');
         const kc=ak&&isKeluarCepat(ak.jam,j.jamSelesai);
         const liburHari=cekLibur(tgl);
-        let ket,klsCls,kcFlag='';
+        let ket,klsCls,kcFlag='',isInsidental=false;
         if(liburHari){ket=liburHari.jenis||liburHari.keterangan;klsCls='kgi';totK++;}
-        else if(kgi){ket=kgi.keterangan;klsCls='kgi';totK++;totT++;}
+        else if(kgiTertentu){ket=kgiTertentu.keterangan;klsCls='kgi';totK++;isInsidental=true;}
+        else if(kgiSemua){ket=kgiSemua.keterangan;klsCls='kgi';totK++;isInsidental=true;}
         else if(am){ket='Terlaksana';klsCls='ok';totT++;if(kc){totKC++;kcFlag='⚡';}}
         else if(ditanganiRekap){ket='Ditangani: '+ditanganiRekap.guruPiket;klsCls='kgi';totT++;}
         else{ket='Tidak Terlaksana';klsCls='ms';totKos++;}
-        rows.push({...j,tgl,hari,am:am?am.jam:'-',ak:ak?ak.jam:'-',ket,klsCls,kcFlag});
+        rows.push({...j,tgl,hari,am:am?am.jam:'-',ak:ak?ak.jam:'-',ket,klsCls,kcFlag,isInsidental});
       });
     });
   const persen=totJ>0?Math.round((totT/totJ)*100):0;
@@ -11666,18 +11670,23 @@ ${(fk&&fk!=='Semua Kelas')?`
         var rmap={};
         rows.forEach(function(r){
           var key=r.hari+'|'+r.jamMulai+'|'+r.jamSelesai+'|'+r.namaGuru+'|'+r.kelas+'|'+r.kodeTampil;
-          if(!rmap[key]) rmap[key]={hari:r.hari,jam:r.jamMulai+'-'+r.jamSelesai,namaGuru:r.namaGuru,kelas:r.kelas,kode:r.kodeTampil,tot:0,ter:0,tdk:0};
-          rmap[key].tot++;
-          if(r.klsCls==='ok'||r.klsCls==='kgi') rmap[key].ter++;
-          else rmap[key].tdk++;
+          if(!rmap[key]) rmap[key]={hari:r.hari,jam:r.jamMulai+'-'+r.jamSelesai,namaGuru:r.namaGuru,kelas:r.kelas,kode:r.kodeTampil,tot:0,ter:0,tdk:0,ins:0};
+          // Hitung hari efektif (kurangi libur)
+          var tglR=r.tgl; // format dd/mm/yyyy
+          var tglISO=tglR.split('/').length===3?tglR.split('/')[2]+'-'+tglR.split('/')[1]+'-'+tglR.split('/')[0]:tglR;
+          var isLibur=dLibur.some(function(l){return l.tanggal===tglISO;});
+          if(!isLibur) rmap[key].tot++;
+          if(r.klsCls==='ok') rmap[key].ter++;
+          else if(r.isInsidental) rmap[key].ins++;
+          else if(r.klsCls==='ms') rmap[key].tdk++;
         });
         var sorted=Object.values(rmap).sort(function(a,b){
           var hd=days.indexOf(a.hari)-days.indexOf(b.hari);
           return hd||(parseInt(a.jam)-parseInt(b.jam));
         });
-        html+='<table><thead><tr><th>No</th><th>Hari</th><th>Nama Guru</th><th>Kelas</th><th>Kode</th><th>Jam</th><th>Total JP</th><th>Terlaksana</th><th>Tdk Terlaksana</th></tr></thead><tbody>';
+        html+='<table><thead><tr><th>No</th><th>Hari</th><th>Nama Guru</th><th>Kelas</th><th>Kode</th><th>Jam</th><th>Total JP</th><th>Terlaksana</th><th>Tdk Terlaksana</th><th>Insidental</th></tr></thead><tbody>';
         sorted.forEach(function(r,i){
-          html+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+r.hari+'</td><td>'+r.namaGuru+'</td><td style="text-align:center"><b>'+r.kelas+'</b></td><td style="text-align:center;font-family:monospace">'+r.kode+'</td><td style="text-align:center">'+r.jam+'</td><td style="text-align:center;font-weight:bold">'+r.tot+' JP</td><td style="text-align:center;color:#166534;font-weight:bold">'+r.ter+' JP</td><td style="text-align:center;color:#dc2626;font-weight:bold">'+r.tdk+' JP</td></tr>';
+          html+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+r.hari+'</td><td>'+r.namaGuru+'</td><td style="text-align:center"><b>'+r.kelas+'</b></td><td style="text-align:center;font-family:monospace">'+r.kode+'</td><td style="text-align:center">'+r.jam+'</td><td style="text-align:center;font-weight:bold">'+r.tot+' JP</td><td style="text-align:center;color:#166534;font-weight:bold">'+r.ter+' JP</td><td style="text-align:center;color:#dc2626;font-weight:bold">'+r.tdk+' JP</td><td style="text-align:center;color:#7c3aed;font-weight:bold">'+(r.ins||0)+' JP</td></tr>';
         });
         html+='</tbody></table>';
       }
@@ -12504,6 +12513,7 @@ function rmkCetak(){
     <td>${r.nama}</td><td style="text-align:center">${r.total} JP</td>
     <td style="text-align:center;color:#166534;font-weight:700">${r.terlaksana} JP</td>
     <td style="text-align:center;color:#dc2626">${r.tidakTerlaksana} JP</td>
+    <td style="text-align:center;color:#7c3aed;font-weight:700">${r.insidental||0} JP</td>
     <td style="text-align:center;font-weight:800;color:${r.persen>=75?'#166534':r.persen>=50?'#92400e':'#dc2626'}">${r.persen}%</td>
   </tr>`).join('');
   const w=window.open('','_blank');
@@ -12549,12 +12559,13 @@ function rmkCetak(){
   <div class="rekap-mapel-section">
   <p style="margin:10px 0 4px;font-weight:800;font-size:11px;">Rekap Per Mata Pelajaran:</p>
   <table class="tbl"><thead><tr>
-    <th>No</th><th>Mata Pelajaran</th><th>Total JP</th><th>Terlaksana</th><th>Tidak Terlaksana</th><th>%</th>
+    <th>No</th><th>Mata Pelajaran</th><th>Total JP</th><th>Terlaksana</th><th>Tidak Terlaksana</th><th>Insidental</th><th>%</th>
   </tr></thead><tbody>${rekapRows}
   <tr style="font-weight:900;background:#f0f0f0;">
     <td colspan="2">TOTAL</td><td style="text-align:center">${totalJP} JP</td>
     <td style="text-align:center;color:#166534">${totalTerlaksana} JP</td>
     <td style="text-align:center;color:#dc2626">${totalJP-totalTerlaksana} JP</td>
+    <td style="text-align:center;color:#7c3aed">${(rekap||[]).reduce((s,r)=>s+(r.insidental||0),0)} JP</td>
     <td style="text-align:center;font-weight:900">${pTotal}%</td>
   </tr></tbody></table>
   <div class="ttd" style="margin-top:20px;">
