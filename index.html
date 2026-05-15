@@ -10017,6 +10017,10 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .ck .cn{color:#92400e;}.ck .cp{color:#b45309;}
 .cb .cn{color:#fff;font-weight:700;}.cb .cp{color:#bfdbfe;}
 .cs .cn{color:#64748b;font-weight:700;}.cs .cp{color:#94a3b8;font-size:9px;}
+.ci{background:#0891b2;border:1px solid #0e7490;border-radius:6px;padding:4px 3px;} /* insidental tertentu = teal */
+.ci .cn{color:#fff;font-weight:700;}.ci .cp{color:#cffafe;font-size:9px;}.ci .cj{color:#e0f2fe;font-size:9px;}
+.cr{background:#4f46e5;border:1px solid #3730a3;border-radius:6px;padding:4px 3px;} /* rapat/semua = indigo */
+.cr .cn{color:#fff;font-weight:700;}.cr .cp{color:#e0e7ff;font-size:9px;}.cr .cj{color:#c7d2fe;font-size:9px;}
 .ca .cn{color:#fff;font-weight:700;}.ca .cp{color:#bfdbfe;}
 
 .ckc{background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:4px 3px;}
@@ -11171,7 +11175,7 @@ function showSuk(nama,kelas,mode,jam,keluarCepat=false){
 function cekKgiSesi(jm,je,hr,tgl){
   for(const k of dIstirahat){if(k.hari===hr&&pJam(k.jamMulai)===pJam(jm)&&pJam(k.jamSelesai)===pJam(je))return{tipe:'istirahat',ket:k.keterangan};}
   for(const k of dRutin){if(k.hari===hr&&pJam(k.jamMulai)===pJam(jm)&&pJam(k.jamSelesai)===pJam(je))return{tipe:'rutin',ket:k.keterangan};}
-  for(const k of dInsidental){if(k.tanggal===tgl&&k.status!=='BATAL'&&pJam(k.jamMulai)===pJam(jm)&&pJam(k.jamSelesai)===pJam(je))return{tipe:'insidental',ket:k.keterangan};}
+  for(const k of dInsidental){if(k.tanggal===tgl&&k.status!=='BATAL'&&(k.berlakuUntuk||'semua')==='semua'&&pJam(k.jamMulai)===pJam(jm)&&pJam(k.jamSelesai)===pJam(je))return{tipe:'insidental',ket:k.keterangan};}
   return null;
 }
 
@@ -11180,7 +11184,7 @@ function renderMonitor(){
   const jh=dJadwal.filter(j=>j.hari===hr);
   const klMap={}, sesiMap={};
   jh.forEach(j=>{klMap[j.kelas]=1; sesiMap[j.jamMulai+'-'+j.jamSelesai]={s:j.jamMulai,e:j.jamSelesai};});
-  [...dIstirahat.filter(k=>k.hari===hr),...dRutin.filter(k=>k.hari===hr),...dInsidental.filter(k=>k.tanggal===tgl&&k.status!=='BATAL')]
+  [...dIstirahat.filter(k=>k.hari===hr),...dRutin.filter(k=>k.hari===hr),...dInsidental.filter(k=>k.tanggal===tgl&&k.status!=='BATAL'&&(k.berlakuUntuk||'semua')==='semua')]
     .forEach(k=>{const key=k.jamMulai+'-'+k.jamSelesai;if(!sesiMap[key])sesiMap[key]={s:k.jamMulai,e:k.jamSelesai,spOnly:true};});
   const kls=Object.keys(klMap).sort(sortKelas);
   const ses=Object.values(sesiMap).sort((a,b)=>pJam(a.s)-pJam(b.s));
@@ -11231,6 +11235,11 @@ function renderMonitor(){
       // Cek penanganan piket
       const ditangani=dPenanganan.find(p=>p.kelas===kl&&p.tanggal===tgl&&p.jamMulai===si.s&&p.status!=='BATAL');
 
+      // Cek insidental tertentu untuk guru ini
+      const insTertentu=dInsidental.find(k=>k.tanggal===tgl&&k.status!=='BATAL'&&k.berlakuUntuk==='tertentu'&&k.namaGuru===j.namaGuru&&pJam(k.jamMulai)<=pJam(si.s)&&pJam(k.jamSelesai)>=pJam(si.e));
+      // Cek insidental semua (rapat dll) untuk jam ini
+      const insSemuaJam=dInsidental.find(k=>k.tanggal===tgl&&k.status!=='BATAL'&&(k.berlakuUntuk||'semua')==='semua'&&pJam(k.jamMulai)===pJam(si.s)&&pJam(k.jamSelesai)===pJam(si.e));
+
       // ── LOGIKA WARNA FINAL ──
       let cls='ca', note='';
 
@@ -11279,6 +11288,19 @@ function renderMonitor(){
           cls='ch'; note='<div class="cj">▶ masih di kelas</div>';
         }
         else{ cls='cs'; } // abu-abu = selesai
+      }
+
+      // Override: insidental tertentu (teal)
+      if(insTertentu){
+        cls='ci';
+        const ketSingkat=insTertentu.keterangan==='Sakit'?'S':insTertentu.keterangan==='Izin'?'I':'DL';
+        const tanganiIni=dPenanganan.find(p=>p.kelas===kl&&p.tanggal===tgl&&pJam(p.jamMulai)<=pJam(si.s)&&pJam(p.jamSelesai)>=pJam(si.e)&&p.status!=='BATAL');
+        note=`<div class="cj">(${ketSingkat})${tanganiIni?' '+tanganiIni.guruPiket.split(',')[0].trim().split(' ').pop():''}</div>`;
+      }
+      // Override: insidental semua/rapat (indigo) — hanya kalau tidak ada insidental tertentu
+      else if(insSemuaJam){
+        cls='cr';
+        note=`<div class="cj">${insSemuaJam.keterangan}</div>`;
       }
 
       const kodeDisplay=j.kodeTampil||j.inisial;
