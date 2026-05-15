@@ -11308,9 +11308,8 @@ function bukaKgi(){
       initKgiForm(); $('sheet-kgi').classList.add('aktif'); return;
     }
   }
-  kgiPinValInt=''; $('kgi-pin-disp').textContent='____'; $('kgi-pin-disp').classList.remove('err');
-  $('kgi-step-pin').style.display='block'; $('kgi-step-form').style.display='none';
-  $('sheet-kgi').classList.add('aktif');
+  // Bukan guru piket — tampilkan notif saja, tidak perlu PIN
+  toast('Anda tidak bertugas piket hari ini','warn');
 }
 function tutupSheetKgi(){ $('sheet-kgi').classList.remove('aktif'); guruPiketLogin=null; kgiPinValInt=''; kgiKetVal=''; kgiKetManual=''; }
 function npKgi(v){
