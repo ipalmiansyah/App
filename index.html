@@ -10008,6 +10008,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .ck{background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:4px 3px;}
 .cb{background:#1d4ed8;border:1px solid #1e3a8a;border-radius:6px;padding:4px 3px;}
 .ca{background:#1d4ed8;border:1px solid #1e3a8a;border-radius:6px;padding:4px 3px;}
+.cs{background:#e2e8f0;border:1px solid #cbd5e1;border-radius:6px;padding:4px 3px;}
 @keyframes rp{0%,100%{background:#fee2e2}50%{background:#fecaca}}
 .cn{font-weight:800;font-size:10px;line-height:1.2;}.cp{font-size:9px;line-height:1.2;margin-top:1px;}.cj{font-family:var(--mono);font-size:8px;margin-top:2px;}
 .ch .cn{color:#15803d;}.ch .cp{color:#16a34a;}.ch .cj{color:#fbbf24;}
@@ -10015,6 +10016,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .cmh .cn{color:#5b21b6;}.cmh .cp{color:#6d28d9;}.cmh .cj{color:#7c3aed;font-size:7px;text-align:right;}
 .ck .cn{color:#92400e;}.ck .cp{color:#b45309;}
 .cb .cn{color:#fff;font-weight:700;}.cb .cp{color:#bfdbfe;}
+.cs .cn{color:#64748b;font-weight:700;}.cs .cp{color:#94a3b8;font-size:9px;}
 .ca .cn{color:#fff;font-weight:700;}.ca .cp{color:#bfdbfe;}
 
 .ckc{background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:4px 3px;}
@@ -11270,14 +11272,13 @@ function renderMonitor(){
       }
       else{ // selesai
         if(kcData){
-          // Sudah keluar cepat — pertahankan warna oranye
           cls='ckc';
           note=`<div class="cj" style="color:#fed7aa">⚡ Keluar Cepat</div>`;
         }
         else if(absMasuk&&!absKeluar){
           cls='ch'; note='<div class="cj">▶ masih di kelas</div>';
         }
-        else{ cls='ca'; }
+        else{ cls='cs'; } // abu-abu = selesai
       }
 
       const kodeDisplay=j.kodeTampil||j.inisial;
