@@ -12496,11 +12496,12 @@ function rmkCetak(){
       // Hitung hari efektif (kurangi libur)
       const tglISO=(r.tgl||'').split('/').length===3?r.tgl.split('/')[2]+'-'+r.tgl.split('/')[1]+'-'+r.tgl.split('/')[0]:r.tgl;
       const isLib=dLibur.some(l=>l.tanggal===tglISO);
-      if(!isLib) rmap[key].tot+=r.jp||1;
-      // Cek insidental dari dInsidental (data rmkCetak tidak punya isInsidental)
+      // Skip hari libur sepenuhnya — tidak masuk tot, ter, tdk, maupun ins
+      if(isLib) return;
+      rmap[key].tot+=r.jp||1;
+      // Cek insidental dari dInsidental
       const jamMulai=(r.jam||'').split('-')[0]||'';
       const jamSelesai=(r.jam||'').split('-')[1]||'';
-      // Prioritaskan insidental tertentu untuk guru ini, baru cek semua
       const insRTertentu=dInsidental.find(k=>k.tanggal===r.tgl&&k.status!=='BATAL'&&
         k.berlakuUntuk==='tertentu'&&k.namaGuru===r.namaGuru&&
         pJam(k.jamMulai)<=pJam(jamMulai)&&pJam(k.jamSelesai)>=pJam(jamSelesai));
