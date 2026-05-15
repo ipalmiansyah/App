@@ -10761,10 +10761,10 @@ let rekapMode='minggu', mingguOfs=0, bulanOfs=0;
 const $  = id => document.getElementById(id);
 const ld = t  => { $('ld-txt').textContent=t||'Memproses...'; $('ld').classList.add('aktif'); };
 const ul = () => $('ld').classList.remove('aktif');
-const nowMin = () => { const d=new Date(); return d.getHours()*60+d.getMinutes(); };
+const nowMin = () => { const d=new Date(); const wib=new Date(d.getTime()+7*60*60*1000); return wib.getUTCHours()*60+wib.getUTCMinutes(); };
 const pJam = s => { const n=(s||'00:00').replace('.',':'); const[h,m]=n.split(':').map(Number); return h*60+(m||0); };
-const hariIni = () => new Date().toLocaleDateString('id-ID',{weekday:'long'});
-const tglStr  = (d=new Date()) => d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'});
+const hariIni = () => new Date(new Date().getTime()+7*60*60*1000).toLocaleDateString('id-ID',{weekday:'long',timeZone:'UTC'});
+const tglStr  = (d=new Date()) => new Date(d.getTime()+7*60*60*1000).toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'});
 const tglISO  = (d=new Date()) => d.toISOString().split('T')[0];
 const inisial = n => n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,3);
 
