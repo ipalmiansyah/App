@@ -10003,7 +10003,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .mon-tbl td:first-child{font-family:var(--mono);font-size:9px;color:var(--teks3);text-align:right;padding-right:8px;background:#fafafa;white-space:nowrap;}
 .mon-tbl tr:last-child td{border-bottom:none;}
 .ch{background:#dcfce7;border:1px solid #86efac;border-radius:6px;padding:4px 3px;}
-.cm{background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;padding:4px 3px;animation:rp 2s ease-in-out infinite;cursor:pointer;}
+.cm{background:#dc2626;border:1px solid #b91c1c;border-radius:6px;padding:4px 3px;animation:rp 2s ease-in-out infinite;cursor:pointer;}
 .cmh{background:#ede9fe;border:1px solid #c4b5fd;border-radius:6px;padding:4px 3px;}
 .ck{background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:4px 3px;}
 .cb{background:#1d4ed8;border:1px solid #1e3a8a;border-radius:6px;padding:4px 3px;}
@@ -10011,7 +10011,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 @keyframes rp{0%,100%{background:#fee2e2}50%{background:#fecaca}}
 .cn{font-weight:800;font-size:10px;line-height:1.2;}.cp{font-size:9px;line-height:1.2;margin-top:1px;}.cj{font-family:var(--mono);font-size:8px;margin-top:2px;}
 .ch .cn{color:#15803d;}.ch .cp{color:#16a34a;}.ch .cj{color:#fbbf24;}
-.cm .cn{color:#b91c1c;}.cm .cp{color:#dc2626;}
+.cm .cn{color:#fff;font-weight:700;}.cm .cp{color:#fecaca;}
 .cmh .cn{color:#5b21b6;}.cmh .cp{color:#6d28d9;}.cmh .cj{color:#7c3aed;font-size:7px;text-align:right;}
 .ck .cn{color:#92400e;}.ck .cp{color:#b45309;}
 .cb .cn{color:#fff;font-weight:700;}.cb .cp{color:#bfdbfe;}
@@ -11167,9 +11167,9 @@ function showSuk(nama,kelas,mode,jam,keluarCepat=false){
 
 // ── MONITOR ──
 function cekKgiSesi(jm,je,hr,tgl){
-  for(const k of dIstirahat){if(k.hari===hr&&k.jamMulai===jm&&k.jamSelesai===je)return{tipe:'istirahat',ket:k.keterangan};}
-  for(const k of dRutin){if(k.hari===hr&&k.jamMulai===jm&&k.jamSelesai===je)return{tipe:'rutin',ket:k.keterangan};}
-  for(const k of dInsidental){if(k.tanggal===tgl&&k.status!=='BATAL'&&k.jamMulai===jm&&k.jamSelesai===je)return{tipe:'insidental',ket:k.keterangan};}
+  for(const k of dIstirahat){if(k.hari===hr&&pJam(k.jamMulai)===pJam(jm)&&pJam(k.jamSelesai)===pJam(je))return{tipe:'istirahat',ket:k.keterangan};}
+  for(const k of dRutin){if(k.hari===hr&&pJam(k.jamMulai)===pJam(jm)&&pJam(k.jamSelesai)===pJam(je))return{tipe:'rutin',ket:k.keterangan};}
+  for(const k of dInsidental){if(k.tanggal===tgl&&k.status!=='BATAL'&&pJam(k.jamMulai)===pJam(jm)&&pJam(k.jamSelesai)===pJam(je))return{tipe:'insidental',ket:k.keterangan};}
   return null;
 }
 
@@ -11233,13 +11233,25 @@ function renderMonitor(){
       let cls='ca', note='';
 
       if(stSesi==='akan'||stSesi==='toleransi'){
-        // Cek apakah sesi sebelumnya ada keluar cepat yang perlu dipertahankan
         const kcSesiIni=absKeluar&&isKeluarCepat(absKeluar.jam,si.e);
         if(kcSesiIni){
-          cls='ckc'; // keluar cepat dipertahankan
+          cls='ckc';
           note=`<div class="cj" style="color:#fed7aa">⚡Keluar Cepat</div>`;
         } else {
-          cls='cb';
+          // Cek sesi sebelumnya — kalau guru sama tidak hadir → merah juga
+          let guruTidakHadirSebelumnya=false;
+          for(let pi=idx-1;pi>=0;pi--){
+            const siP=ses[pi];
+            if(siP.spOnly) continue;
+            const jP=jh.find(x=>x.kelas===kl&&x.jamMulai===siP.s&&x.namaGuru===j.namaGuru);
+            if(!jP) continue; // guru berbeda di sesi itu
+            const stP=sSesi(siP.s,siP.e);
+            if(stP==='akan') continue; // sesi sebelumnya juga belum mulai
+            const absP=dAbsensi.find(a=>a.kelas===kl&&a.tanggal===tgl&&a.mode==='masuk'&&a.guru===j.namaGuru&&pJam(a.jam)>=pJam(siP.s)&&pJam(a.jam)<=pJam(siP.e)+30);
+            if(!absP){ guruTidakHadirSebelumnya=true; }
+            break;
+          }
+          cls=guruTidakHadirSebelumnya?'cm':'cb';
         }
       }
       else if(stSesi==='berlangsung'){
