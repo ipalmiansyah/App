@@ -10722,6 +10722,24 @@ let gpsOK = false, camStream = null, scanActive = false, scanTimer = null;
 let kelasScan = null, modeScan = 'masuk';
 let kgiPinVal = '';
 let dGuru=[], dJadwal=[], dAbsensi=[], dIstirahat=[], dRutin=[], dInsidental=[], dPenanganan=[];
+let dLibur=[]; // {tanggal:'yyyy-MM-dd', keterangan:'...', jenis:'...'}
+async function loadLibur(){
+  if(dLibur.length) return;
+  try{
+    const r=await fetch(CFG.APPS_SCRIPT_URL+'?action=getLibur');
+    const d=await r.json();
+    if(d.ok&&Array.isArray(d.data)) dLibur=d.data;
+  }catch(e){ console.log('[LIBUR] Gagal load:', e); }
+}
+function cekLibur(tglStr){
+  // tglStr format: dd/mm/yyyy atau yyyy-MM-dd
+  let iso=tglStr;
+  if(tglStr.includes('/')){
+    const p=tglStr.split('/');
+    iso=p.length===3?(p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0')):tglStr;
+  }
+  return dLibur.find(l=>l.tanggal===iso)||null;
+}
 function fixKelas(arr){
   if(!Array.isArray(arr)) return arr;
   const m={'VII-A':'7A','VII-B':'7B','VII-C':'7C','VII-D':'7D',
@@ -10885,11 +10903,19 @@ async function doRegistrasi(){
       if(errEl) errEl.style.display='none';
       tampilApp();
     } else {
-      if(errEl){ errEl.style.display='block'; errEl.textContent=d.error||'Token tidak valid atau sudah digunakan HP lain.'; }
+      const errMsg = d.error||'Token tidak valid.';
+      const pesanHPLain = errMsg.toLowerCase().includes('perangkat') || errMsg.toLowerCase().includes('device') || errMsg.toLowerCase().includes('lain');
+      if(errEl){
+        errEl.style.display='block';
+        errEl.style.color='#dc2626';
+        errEl.textContent = pesanHPLain
+          ? 'Token sudah terdaftar di perangkat lain. Hubungi admin untuk reset.'
+          : errMsg;
+      }
     }
   }catch(e){
     ul();
-    if(errEl){ errEl.style.display='block'; errEl.style.color='#dc2626'; errEl.textContent='Gagal: '+e.message; }
+    if(errEl){ errEl.style.display='block'; errEl.style.color='#dc2626'; errEl.textContent='Gagal koneksi. Coba lagi.'; }
   }
 }
 
@@ -10963,7 +10989,7 @@ async function loadData(){
     if(!dInsidental.length) dInsidental=[];
     if(!dPenanganan.length) dPenanganan=[];
   }
-  renderRiwayat(); fillFilters(); rmkInitKelas();
+  renderRiwayat(); fillFilters(); rmkInitKelas(); loadLibur();
   if($('pg-monitor').classList.contains('aktif')) renderMonitor();
 }
 
@@ -11482,6 +11508,7 @@ function renderRekap(){
 }
 
 async function cetakRekap(){
+  await loadLibur(); // pastikan data libur tersedia
   const{sn,sb}=getRentang();
   const fg=$('f-guru').value||'Semua Guru', fk=$('f-kelas').value||'Semua Kelas', fh=$('f-hari').value||'Semua Hari';
   // Load wali kelas dari WALAS jika belum ada
@@ -11504,8 +11531,10 @@ async function cetakRekap(){
         const kgi=dInsidental.find(k=>k.tanggal===tgl&&k.status!=='BATAL'&&pJam(k.jamMulai)<=pJam(j.jamMulai)&&pJam(k.jamSelesai)>=pJam(j.jamSelesai));
         const ditanganiRekap=dPenanganan.find(p=>p.kelas===j.kelas&&p.tanggal===tgl&&pJam(p.jamMulai)<=pJam(j.jamMulai)&&pJam(p.jamSelesai)>=pJam(j.jamSelesai)&&p.status!=='BATAL');
         const kc=ak&&isKeluarCepat(ak.jam,j.jamSelesai);
+        const liburHari=cekLibur(tgl);
         let ket,klsCls,kcFlag='';
-        if(kgi){ket=kgi.keterangan;klsCls='kgi';totK++;totT++;}
+        if(liburHari){ket=liburHari.jenis||liburHari.keterangan;klsCls='kgi';totK++;}
+        else if(kgi){ket=kgi.keterangan;klsCls='kgi';totK++;totT++;}
         else if(am){ket='Terlaksana';klsCls='ok';totT++;if(kc){totKC++;kcFlag='⚡';}}
         else if(ditanganiRekap){ket='Ditangani: '+ditanganiRekap.guruPiket;klsCls='kgi';totT++;}
         else{ket='Tidak Terlaksana';klsCls='ms';totKos++;}
