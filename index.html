@@ -10375,6 +10375,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
         <button class="btn-tt-tab aktif" id="tt-tab-input" onclick="ttGoto('input')">✏️ Input</button>
         <button class="btn-tt-tab" id="tt-tab-kelas" onclick="ttGoto('kelas')">👥 Rekap Kelas</button>
         <button class="btn-tt-tab" id="tt-tab-individu" onclick="ttGoto('individu')">🔍 Rekap Individu</button>
+        <button class="btn-tt-tab" id="tt-tab-hadir" onclick="ttGoto('hadir')">📋 Rekap Hadir</button>
         <button class="btn-tt-tab" onclick="ttRefresh()" style="flex:0;padding:8px 10px;" title="Refresh data">🔄</button>
       </div>
 
@@ -10542,6 +10543,21 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
       </div>
     </div>
 
+      <!-- SUB TAB: REKAP HADIR SISWA -->
+      <div class="tt-sub" id="tt-hadir" style="padding:12px 16px;display:flex;flex-direction:column;gap:10px;">
+        <button id="rhs-btn-cetak" onclick="rhsCetak()" style="display:none;width:100%;padding:10px;border-radius:10px;border:none;background:#1e293b;color:#fff;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:4px;">🖨️ Cetak PDF Rekap Hadir</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="date" id="rhs-dari" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--card);color:var(--teks1);">
+          <span style="color:var(--teks3);font-size:12px;">s.d.</span>
+          <input type="date" id="rhs-sampai" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--card);color:var(--teks1);">
+        </div>
+        <select id="rhs-kelas" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--card);color:var(--teks1);">
+          <option value="">-- Pilih Kelas --</option>
+        </select>
+        <button onclick="rhsTampilkan()" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--hijau);color:#fff;font-weight:700;font-size:14px;cursor:pointer;">Tampilkan</button>
+        <div id="rhs-result"></div>
+      </div>
+
     <!-- Form input -->
     <div id="kgi-step-form" style="display:none">
       <div style="background:var(--g-bg);border:1px solid var(--g-bd);border-radius:10px;padding:8px 12px;text-align:center;font-size:12px;font-weight:800;color:var(--g3);margin-bottom:14px" id="kgi-piket-info"></div>
@@ -10704,7 +10720,7 @@ const CFG = {
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyB2ESAAwcPW2vufabMbbLGkEEcp-_YksDtU_9QCW7_e5tXzxQA98TWfcR8HrqtiRaoJw/exec',
   SEKOLAH_LAT:  -2.517743,
   SEKOLAH_LNG:  102.650029,
-  RADIUS_METER: 70000,
+  RADIUS_METER: 70,
   NAMA_SEKOLAH: 'SMP Negeri 05 Sarolangun',
   ADMIN_PASS: 'admin2025',
   KEPSEK:       'Sukardiman, M.Pd.',
@@ -11294,8 +11310,9 @@ function renderMonitor(){
       if(insTertentu){
         cls='ci';
         const ketSingkat=insTertentu.keterangan==='Sakit'?'S':insTertentu.keterangan==='Izin'?'I':'DL';
-        const tanganiIni=dPenanganan.find(p=>p.kelas===kl&&p.tanggal===tgl&&pJam(p.jamMulai)<=pJam(si.s)&&pJam(p.jamSelesai)>=pJam(si.e)&&p.status!=='BATAL');
-        note=`<div class="cj">(${ketSingkat})${tanganiIni?' '+tanganiIni.guruPiket.split(',')[0].trim().split(' ').pop():''}</div>`;
+        // Guru piket yang input = yang menangani otomatis
+        const piketIns=insTertentu.guruPiket||'';
+        note=`<div class="cj">(${ketSingkat})${piketIns?' '+piketIns:''}</div>`;
       }
       // Override: insidental semua/rapat (indigo) — hanya kalau tidak ada insidental tertentu
       else if(insSemuaJam){
@@ -11693,6 +11710,141 @@ ${(fk&&fk!=='Semua Kelas')?`
       wrap.innerHTML=html;
     }catch(e){ console.error('Render tabel gagal:',e); }
   },300);
+}
+
+// ── REKAP HADIR SISWA ──
+let rhsData = null;
+
+function rhsInitKelas(){
+  const sel = $('rhs-kelas');
+  if(sel.options.length > 1) return;
+  const srcJadwal = dJadwal.length > 0 ? dJadwal : DATA_JADWAL_LOKAL;
+  const kelas = [...new Set(srcJadwal.map(j=>j.kelas))].sort(sortKelas);
+  kelas.forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent='Kelas '+k; sel.appendChild(o); });
+}
+
+async function rhsTampilkan(){
+  const dari = $('rhs-dari').value;
+  const sampai = $('rhs-sampai').value;
+  const kelas = $('rhs-kelas').value;
+  if(!dari||!sampai||!kelas){ toast('Pilih rentang tanggal dan kelas','warn'); return; }
+  const res = $('rhs-result');
+  res.innerHTML = '<div style="text-align:center;padding:24px;color:var(--teks3)">Memuat...</div>';
+  $('rhs-btn-cetak').style.display = 'none';
+  try{
+    // Konversi dari yyyy-MM-dd ke yyyy-MM-dd (sudah benar untuk server)
+    const r = await fetch(CFG.APPS_SCRIPT_URL+`?action=getRekapHadirSiswa&token=${encodeURIComponent(guruLogin.token)}&dari=${encodeURIComponent(dari)}&sampai=${encodeURIComponent(sampai)}&kelas=${encodeURIComponent(kelas)}`);
+    const d = await r.json();
+    if(!d.ok){ res.innerHTML='<div style="color:var(--merah);text-align:center">'+( d.error||'Gagal')+'</div>'; return; }
+    rhsData = d;
+    rhsRender(d, kelas);
+    $('rhs-btn-cetak').style.display = 'block';
+  }catch(e){ res.innerHTML='<div style="color:var(--merah);text-align:center">Gagal load data</div>'; }
+}
+
+function rhsRender(d, kelas){
+  const res = $('rhs-result');
+  if(!d.data||!d.data.length){ res.innerHTML='<div style="text-align:center;color:var(--teks3);padding:20px">Tidak ada data siswa</div>'; return; }
+  let html = `<div style="font-size:12px;color:var(--teks3);margin-bottom:8px;">Hari Efektif: <b>${d.hariEfektif}</b> hari | Kelas ${kelas}</div>`;
+  html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">';
+  html += '<thead><tr style="background:var(--g4);color:#fff;">';
+  html += '<th style="padding:6px 4px;text-align:center">No</th><th style="padding:6px 4px;text-align:left">Nama</th><th style="padding:6px 4px;text-align:center">Hadir</th><th style="padding:6px 4px;text-align:center">Tlb</th><th style="padding:6px 4px;text-align:center">I</th><th style="padding:6px 4px;text-align:center">S</th><th style="padding:6px 4px;text-align:center">A</th><th style="padding:6px 4px;text-align:center">%</th>';
+  html += '</tr></thead><tbody>';
+  d.data.forEach((s,i)=>{
+    const pct = d.hariEfektif>0 ? Math.round(s.hadir/d.hariEfektif*100) : 0;
+    const bg = i%2===0 ? 'var(--card)' : 'var(--bg)';
+    html += `<tr style="background:${bg}">`;
+    html += `<td style="padding:5px 4px;text-align:center">${i+1}</td>`;
+    html += `<td style="padding:5px 4px">${s.nama}</td>`;
+    html += `<td style="padding:5px 4px;text-align:center">${s.hadir}</td>`;
+    html += `<td style="padding:5px 4px;text-align:center">${s.terlambat||0}</td>`;
+    html += `<td style="padding:5px 4px;text-align:center">${s.izin||0}</td>`;
+    html += `<td style="padding:5px 4px;text-align:center">${s.sakit||0}</td>`;
+    html += `<td style="padding:5px 4px;text-align:center">${s.alpa||0}</td>`;
+    html += `<td style="padding:5px 4px;text-align:center;font-weight:700;color:${pct>=75?'var(--hijau)':'var(--merah)'}">${pct}%</td>`;
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  res.innerHTML = html;
+}
+
+async function rhsCetak(){
+  if(!rhsData) return;
+  const kelas = $('rhs-kelas').value;
+  const dari = $('rhs-dari').value;
+  const sampai = $('rhs-sampai').value;
+  const periodeLabel = `${new Date(dari).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})} s.d. ${new Date(sampai).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}`;
+  const tglCetak = new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+
+  // Cari wali kelas
+  await loadWaliKelas();
+  const waliData = dWaliKelas[kelas]||{};
+
+  // Baris tabel siswa
+  let siswaBaris = '';
+  rhsData.data.forEach((s,i)=>{
+    const pct = rhsData.hariEfektif>0 ? Math.round(s.hadir/rhsData.hariEfektif*100) : 0;
+    const warna = pct>=75?'#166534':pct>=50?'#92400e':'#dc2626';
+    siswaBaris += `<tr>
+      <td style="text-align:center">${i+1}</td>
+      <td>${s.nama}</td>
+      <td style="text-align:center">${rhsData.hariEfektif}</td>
+      <td style="text-align:center">${s.hadir}</td>
+      <td style="text-align:center">${s.terlambat||0}</td>
+      <td style="text-align:center">${s.izin||0}</td>
+      <td style="text-align:center">${s.sakit||0}</td>
+      <td style="text-align:center">${s.alpa||0}</td>
+      <td style="text-align:center;font-weight:700;color:${warna}">${pct}%</td>
+    </tr>`;
+  });
+
+  // Daftar hari libur
+  let liburBaris = '';
+  (rhsData.daftarLibur||[]).forEach((l,i)=>{
+    const tgl = new Date(l.tanggal).toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    liburBaris += `<tr><td style="text-align:center">${i+1}</td><td>${tgl}</td><td>${l.keterangan}</td></tr>`;
+  });
+
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rekap Hadir Siswa</title>
+  ${ttStyleHTML()}
+  <style>
+    table.tbl th,table.tbl td{font-size:10px;padding:3px 5px;}
+    .ttd{display:flex;justify-content:space-between;margin-top:24px;}
+    .ttd-box{text-align:center;width:220px;}
+    .ttd-box .garis{border-bottom:1px solid #000;margin:46px 10px 4px;width:200px;display:inline-block;}
+    .ttd-nama{font-weight:bold;}.ttd-nip{font-size:9pt;}
+    .libur-section{page-break-before:always;}
+  </style>
+  </head><body>${ttKopHTML()}
+  <h4>REKAP KEHADIRAN SISWA</h4>
+  <p style="text-align:center;margin:2px 0;">Tahun Ajaran ${CFG.tahun_ajaran||'2025/2026'}</p>
+  <table class="info" style="margin:8px 0;">
+    <tr><td>Kelas</td><td>: <b>${kelas}</b></td></tr>
+    <tr><td>Periode</td><td>: ${periodeLabel}</td></tr>
+    <tr><td>Wali Kelas</td><td>: ${waliData.nama||'-'}</td></tr>
+    <tr><td>Hari Efektif</td><td>: ${rhsData.hariEfektif} hari</td></tr>
+  </table>
+  <table class="tbl"><thead><tr>
+    <th>No</th><th>Nama Siswa</th><th>Hari Efektif</th><th>Hadir</th><th>Terlambat</th><th>Izin</th><th>Sakit</th><th>Alpa</th><th>%</th>
+  </tr></thead><tbody>${siswaBaris}</tbody></table>
+  <div class="ttd">
+    <div class="ttd-box">
+      <p>${CFG.LOKASI}, ${tglCetak}</p><p>Wali Kelas ${kelas}</p>
+      <div class="space"></div>
+      <p><b>${waliData.nama||'_______________'}</b></p>
+      <p>${waliData.nip?'NIP. '+waliData.nip:''}</p>
+    </div>
+  </div>
+  ${liburBaris?`<div class="libur-section">
+  <p style="margin:10px 0 4px;font-weight:800;font-size:11px;">Daftar Hari Libur:</p>
+  <table class="tbl"><thead><tr><th>No</th><th>Tanggal</th><th>Keterangan</th></tr></thead>
+  <tbody>${liburBaris}</tbody></table>
+  <p style="margin-top:6px;font-size:9pt;">Total hari libur: ${(rhsData.daftarLibur||[]).length} hari | Total hari efektif: ${rhsData.hariEfektif} hari</p>
+  </div>`:''}
+  <br><button class="np" onclick="window.print()" style="padding:9px 22px;background:#166534;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Cetak</button>
+  </body></html>`);
+  win.document.close();
 }
 
 // ── MENU BEL ──
@@ -12291,7 +12443,8 @@ function ttGoto(sub){
   document.querySelectorAll('.tt-sub').forEach(el=>el.classList.remove('aktif'));
   document.querySelectorAll('.btn-tt-tab').forEach(el=>el.classList.remove('aktif'));
   // Tampilkan yang dipilih
-  const subMap={input:'tt-input',kelas:'tt-kelas-sub',individu:'tt-individu-sub'};
+  const subMap={input:'tt-input',kelas:'tt-kelas-sub',individu:'tt-individu-sub',hadir:'tt-hadir'};
+  if(sub==='hadir') rhsInitKelas();
   const el=$(subMap[sub]);
   if(el) el.classList.add('aktif');
   const btn=$('tt-tab-'+sub);
@@ -12614,9 +12767,9 @@ const _origGoto=goto;
 goto=function(pg){
   _origGoto(pg);
   if(pg==='tt'){
-    // Isi pelapor langsung dari guruLogin tanpa tunggu fetch
     if(guruLogin?.nama) $('tt-pelapor-nama').textContent=guruLogin.nama;
     ttLoadData();
+    rhsInitKelas();
   }
 };
 </script>
