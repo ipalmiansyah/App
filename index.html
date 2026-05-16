@@ -10470,16 +10470,18 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 
       <!-- SUB TAB: REKAP HADIR SISWA -->
       <div class="tt-sub" id="tt-hadir" style="padding:12px 16px;">
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-          <input type="date" id="rhs-dari" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--card);color:var(--teks1);">
-          <span style="color:var(--teks3);font-size:12px;">s.d.</span>
-          <input type="date" id="rhs-sampai" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--card);color:var(--teks1);">
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <input type="date" id="rhs-dari" style="flex:1;padding:8px 6px;border-radius:10px;border:1.5px solid var(--border);font-size:12px;background:var(--card);color:var(--teks1);">
+          <span style="color:var(--teks3);font-size:11px;align-self:center;">s.d.</span>
+          <input type="date" id="rhs-sampai" style="flex:1;padding:8px 6px;border-radius:10px;border:1.5px solid var(--border);font-size:12px;background:var(--card);color:var(--teks1);">
         </div>
-        <select id="rhs-kelas" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--card);color:var(--teks1);margin-bottom:8px;">
-          <option value="">-- Pilih Kelas --</option>
-        </select>
-        <button onclick="rhsTampilkan()" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--hijau);color:#fff;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:8px;">Tampilkan</button>
-        <button id="rhs-btn-cetak" onclick="rhsCetak()" style="display:none;width:100%;padding:10px;border-radius:10px;border:none;background:#1e293b;color:#fff;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px;">🖨️ Cetak PDF Rekap Hadir</button>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <select id="rhs-kelas" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--border);font-size:12px;background:var(--card);color:var(--teks1);">
+            <option value="">-- Pilih Kelas --</option>
+          </select>
+          <button onclick="rhsTampilkan()" style="padding:8px 16px;border-radius:10px;border:none;background:var(--hijau);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">Tampilkan</button>
+        </div>
+        <button id="rhs-btn-cetak" onclick="rhsCetak()" style="display:none;width:100%;padding:10px;border-radius:10px;border:none;background:#1e293b;color:#fff;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:6px;">🖨️ Cetak PDF Rekap Hadir</button>
         <div id="rhs-result"></div>
       </div>
     </div>
@@ -11730,7 +11732,9 @@ async function rhsTampilkan(){
   const kelas = $('rhs-kelas').value;
   if(!dari||!sampai||!kelas){ toast('Pilih rentang tanggal dan kelas','warn'); return; }
   const res = $('rhs-result');
-  res.innerHTML = '<div style="text-align:center;padding:24px;color:var(--teks3)">Memuat...</div>';
+  const btnTampil = document.querySelector('[onclick="rhsTampilkan()"]');
+  if(btnTampil){ btnTampil.textContent='⏳ Memuat...'; btnTampil.disabled=true; }
+  res.innerHTML = '<div style="text-align:center;padding:24px;color:var(--teks3)">⏳ Mengambil data dari server...</div>';
   $('rhs-btn-cetak').style.display = 'none';
   try{
     // Konversi dari yyyy-MM-dd ke yyyy-MM-dd (sudah benar untuk server)
@@ -11741,6 +11745,7 @@ async function rhsTampilkan(){
     rhsRender(d, kelas);
     $('rhs-btn-cetak').style.display = 'block';
   }catch(e){ res.innerHTML='<div style="color:var(--merah);text-align:center">Gagal load data</div>'; }
+  finally{ if(btnTampil){ btnTampil.textContent='Tampilkan'; btnTampil.disabled=false; } }
 }
 
 function rhsRender(d, kelas){
