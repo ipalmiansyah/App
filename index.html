@@ -11754,7 +11754,7 @@ function rhsRender(d, kelas){
   let html = `<div style="font-size:12px;color:var(--teks3);margin-bottom:8px;">Hari Efektif: <b>${d.hariEfektif}</b> hari | Kelas ${kelas}</div>`;
   html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">';
   html += '<thead><tr style="background:var(--g4);color:#fff;">';
-  html += '<th style="padding:6px 4px;text-align:center">No</th><th style="padding:6px 4px;text-align:left">Nama</th><th style="padding:6px 4px;text-align:center">Hadir</th><th style="padding:6px 4px;text-align:center">Tlb</th><th style="padding:6px 4px;text-align:center">I</th><th style="padding:6px 4px;text-align:center">S</th><th style="padding:6px 4px;text-align:center">A</th><th style="padding:6px 4px;text-align:center">%</th>';
+  html += '<th style="padding:6px 4px;text-align:center">No</th><th style="padding:6px 4px;text-align:left">Nama</th><th style="padding:6px 4px;text-align:center">Hadir</th><th style="padding:6px 4px;text-align:center">OT</th><th style="padding:6px 4px;text-align:center">Tlb</th><th style="padding:6px 4px;text-align:center">I</th><th style="padding:6px 4px;text-align:center">S</th><th style="padding:6px 4px;text-align:center">A</th><th style="padding:6px 4px;text-align:center">%</th>';
   html += '</tr></thead><tbody>';
   d.data.forEach((s,i)=>{
     const pct = d.hariEfektif>0 ? Math.round(s.hadir/d.hariEfektif*100) : 0;
@@ -11763,6 +11763,7 @@ function rhsRender(d, kelas){
     html += `<td style="padding:5px 4px;text-align:center">${i+1}</td>`;
     html += `<td style="padding:5px 4px">${s.nama}</td>`;
     html += `<td style="padding:5px 4px;text-align:center">${s.hadir}</td>`;
+    html += `<td style="padding:5px 4px;text-align:center">${s.onTime||0}</td>`;
     html += `<td style="padding:5px 4px;text-align:center">${s.terlambat||0}</td>`;
     html += `<td style="padding:5px 4px;text-align:center">${s.izin||0}</td>`;
     html += `<td style="padding:5px 4px;text-align:center">${s.sakit||0}</td>`;
@@ -11784,7 +11785,8 @@ async function rhsCetak(){
 
   // Cari wali kelas
   await loadWaliKelas();
-  const waliData = dWaliKelas[kelas]||{};
+  // Coba cari dengan format kelas yang ada
+  const waliData = dWaliKelas[kelas] || Object.entries(dWaliKelas).find(([k])=>k===kelas||k.replace(/\s/g,'')===kelas.replace(/\s/g,''))?.[1] || {};
 
   // Baris tabel siswa
   let siswaBaris = '';
@@ -11796,6 +11798,7 @@ async function rhsCetak(){
       <td>${s.nama}</td>
       <td style="text-align:center">${rhsData.hariEfektif}</td>
       <td style="text-align:center">${s.hadir}</td>
+      <td style="text-align:center">${s.onTime||0}</td>
       <td style="text-align:center">${s.terlambat||0}</td>
       <td style="text-align:center">${s.izin||0}</td>
       <td style="text-align:center">${s.sakit||0}</td>
@@ -11832,7 +11835,7 @@ async function rhsCetak(){
     <tr><td>Hari Efektif</td><td>: ${rhsData.hariEfektif} hari</td></tr>
   </table>
   <table class="tbl"><thead><tr>
-    <th>No</th><th>Nama Siswa</th><th>Hari Efektif</th><th>Hadir</th><th>Terlambat</th><th>Izin</th><th>Sakit</th><th>Alpa</th><th>%</th>
+    <th>No</th><th>Nama Siswa</th><th>Hari Efektif</th><th>Hadir</th><th>Ontime</th><th>Terlambat</th><th>Izin</th><th>Sakit</th><th>Alpa</th><th>%</th>
   </tr></thead><tbody>${siswaBaris}</tbody></table>
   <div class="ttd">
     <div class="ttd-box">
