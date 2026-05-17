@@ -11058,26 +11058,70 @@ async function bukaKam(){
       dbg('Timeout fallback — paksa mulai');
       vid.play().catch(()=>{});
       scanActive=true;
-      scanTimer=setInterval(doFrame,300);
+      requestAnimationFrame(doFrame); // rAF = 60fps, instant response
     }
-  },3000);
+  },800); // Delay awal 800ms saja
 }
+
+// Deteksi apakah QR dari layar/foto berdasarkan brightness variance
+function cekDariLayar(imgData, w, h){
+  // Ambil sample piksel dari area tengah (zona QR)
+  const x0=Math.floor(w*0.25), y0=Math.floor(h*0.25);
+  const x1=Math.floor(w*0.75), y1=Math.floor(h*0.75);
+  let sum=0, sumSq=0, n=0;
+  const step=4; // sample setiap 4 piksel
+  for(let y=y0;y<y1;y+=step){
+    for(let x=x0;x<x1;x+=step){
+      const i=(y*w+x)*4;
+      const bright=(imgData[i]*0.299+imgData[i+1]*0.587+imgData[i+2]*0.114);
+      sum+=bright; sumSq+=bright*bright; n++;
+    }
+  }
+  const mean=sum/n;
+  const variance=sumSq/n-mean*mean;
+  const stddev=Math.sqrt(variance);
+  // Layar: brightness tinggi (mean>180) dan variance rendah (stddev<45) = terlalu smooth
+  // Kertas: variance lebih tinggi karena grain/noise alami
+  const dariLayar = mean>175 && stddev<40;
+  return {dariLayar, mean:Math.round(mean), stddev:Math.round(stddev)};
+}
+
+let _layarWarn=0; // debounce notif layar
 function doFrame(){
-  if(!camStream||!scanActive) return;
+  if(!camStream||!scanActive){ return; }
   try{
-    const v=$('vid'),c=$('cnv');
-    if(!v||!c) return;
-    if(v.readyState<2||!v.videoWidth||!v.videoHeight||v.videoWidth===0||v.videoHeight===0) return;
-    c.width=v.videoWidth; c.height=v.videoHeight;
-    const ctx=c.getContext('2d');
-    if(!ctx) return;
-    ctx.drawImage(v,0,0,c.width,c.height);
-    const img=ctx.getImageData(0,0,c.width,c.height);
-    if(!img||!img.data) return;
-    const qr=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'})
-           ||jsQR(img.data,img.width,img.height,{inversionAttempts:'onlyInvert'});
-    if(qr&&qr.data){ dbg('✅ QR: '+qr.data); prosesQR(qr.data); }
+    const v=$('vid'),cvs=$('cnv');
+    if(!v||!cvs) { if(scanActive) requestAnimationFrame(doFrame); return; }
+    if(v.readyState<2||!v.videoWidth||!v.videoHeight){ requestAnimationFrame(doFrame); return; }
+    const vw=v.videoWidth, vh=v.videoHeight;
+    const scale=Math.min(1,640/Math.max(vw,vh));
+    const w=Math.floor(vw*scale), h=Math.floor(vh*scale);
+    if(w===0||h===0){ requestAnimationFrame(doFrame); return; }
+    cvs.width=w; cvs.height=h;
+    const ctx=cvs.getContext('2d');
+    if(!ctx){ requestAnimationFrame(doFrame); return; }
+    ctx.drawImage(v,0,0,w,h);
+    const img=ctx.getImageData(0,0,w,h);
+    if(!img||!img.data){ requestAnimationFrame(doFrame); return; }
+    const qr=jsQR(img.data,w,h,{inversionAttempts:'attemptBoth'});
+    if(qr&&qr.data){
+      // Cek apakah dari layar/foto
+      const {dariLayar,mean,stddev}=cekDariLayar(img.data,w,h);
+      dbg(`QR: ${qr.data} | bright:${mean} std:${stddev} layar:${dariLayar}`);
+      if(dariLayar){
+        // Tolak — dari layar/foto
+        const now=Date.now();
+        if(now-_layarWarn>3000){
+          _layarWarn=now;
+          toast('⚠️ Scan dari kertas asli, bukan dari layar atau foto!','warn');
+        }
+        requestAnimationFrame(doFrame); return;
+      }
+      prosesQR(qr.data);
+      return;
+    }
   }catch(e){ dbg('Frame: '+e.message); }
+  if(scanActive) requestAnimationFrame(doFrame);
 }
 function prosesQR(data){
   scanActive=false; if(scanTimer){clearInterval(scanTimer);scanTimer=null;}
