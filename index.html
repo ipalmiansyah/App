@@ -10424,6 +10424,10 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
               </select>
             </div>
             <div class="form-row">
+              <label>Perihal</label>
+              <input type="text" id="tt-perihal-bin" placeholder="Contoh: Tidak masuk 3 hari berturut-turut" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;width:100%;background:var(--bg);color:var(--teks1);">
+            </div>
+            <div class="form-row">
               <label>Orang Tua/Wali <span style="font-size:10px;font-weight:400;color:var(--teks3)">(opsional)</span></label>
               <input type="text" id="tt-ortu-bin" placeholder="Nama orang tua/wali yang hadir" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;width:100%;background:var(--bg);color:var(--teks1);">
             </div>
@@ -11939,6 +11943,12 @@ function ttSetMode(mode){
   $('tt-mode-bin').style.background = isPel ? 'white' : '#166534';
   $('tt-mode-bin').style.color = isPel ? 'var(--teks2)' : '#fff';
   $('tt-mode-bin').style.borderColor = isPel ? 'var(--border)' : '#166534';
+  // Update label dinamis
+  const lblTgl = document.querySelector('label[for-id="tt-tgl-kejadian"]') ||
+    [...document.querySelectorAll('.form-row label')].find(l=>l.nextElementSibling&&l.nextElementSibling.id==='tt-tgl-kejadian');
+  const lblPelapor = [...document.querySelectorAll('.form-row label')].find(l=>l.nextElementSibling&&l.nextElementSibling.id==='tt-pelapor-nama');
+  if(lblTgl) lblTgl.textContent = isPel ? 'Tanggal Kejadian' : 'Tanggal Pembinaan';
+  if(lblPelapor) lblPelapor.textContent = isPel ? 'Pelapor' : 'Yang Membina';
 }
 
 // ── MENU BEL ──
@@ -12278,10 +12288,10 @@ async function ttSubmit(){
     try{
       const r=await fetch(CFG.APPS_SCRIPT_URL,{
         method:'POST',headers:{'Content-Type':'text/plain'},
-        body:JSON.stringify({action:'submitPembinaan',namaGuru,statusPelapor:status,namaSiswa:siswa,kelas,pembinaan:jenisBin,tanggal:tgl,ortuWali:($('tt-ortu-bin').value||'').trim()})
+        body:JSON.stringify({action:'submitPembinaan',namaGuru,statusPelapor:status,namaSiswa:siswa,kelas,pembinaan:jenisBin,perihal:($('tt-perihal-bin').value||'').trim(),tanggal:tgl,ortuWali:($('tt-ortu-bin').value||'').trim()})
       });
       const d=await r.json();
-      if(d.ok){ toast('✅ Pembinaan berhasil dicatat'); $('tt-siswa').value=''; $('tt-ortu-bin').value=''; }
+      if(d.ok){ toast('✅ Pembinaan berhasil dicatat'); $('tt-siswa').value=''; $('tt-perihal-bin').value=''; $('tt-ortu-bin').value=''; }
       else toast('Gagal: '+(d.error||'Error'),'warn');
     }catch(e){ toast('Gagal kirim data','warn'); }
     finally{ btn.disabled=false; btn.textContent='SUBMIT'; }
