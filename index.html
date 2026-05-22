@@ -10376,6 +10376,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
         <button class="btn-tt-tab" id="tt-tab-kelas" onclick="ttGoto('kelas')">👥 Rekap Kelas</button>
         <button class="btn-tt-tab" id="tt-tab-individu" onclick="ttGoto('individu')">🔍 Rekap Individu</button>
         <button class="btn-tt-tab" id="tt-tab-hadir" onclick="ttGoto('hadir')">📋 Rekap Hadir</button>
+        <button class="btn-tt-tab" id="tt-tab-bina" onclick="ttGoto('bina')">🤝 Rekap Bina</button>
         <button class="btn-tt-tab" onclick="ttRefresh()" style="flex:0;padding:8px 10px;" title="Refresh data">🔄</button>
       </div>
 
@@ -10496,6 +10497,22 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
           <div id="tt-ind-tbl" style="margin-bottom:12px;"></div>
           <button class="btn-primary" onclick="ttCetakPDF()" style="width:100%;">🖨️ Cetak / Download PDF</button>
         </div>
+      </div>
+
+      <!-- SUB TAB: REKAP PEMBINAAN -->
+      <div class="tt-sub" id="tt-bina" style="padding:12px 16px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+          <select id="bina-kelas" onchange="binaLoadSiswa()" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;font-family:inherit;background:var(--card);color:var(--teks1);">
+            <option value="">-- Pilih Kelas --</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+          <select id="bina-siswa" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;font-family:inherit;background:var(--card);color:var(--teks1);">
+            <option value="">-- Pilih Siswa --</option>
+          </select>
+          <button onclick="loadRekapBina()" style="padding:9px 14px;background:#166534;color:white;border:none;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Tampilkan</button>
+        </div>
+        <div id="bina-result"></div>
       </div>
 
       <!-- SUB TAB: REKAP HADIR SISWA -->
@@ -11789,8 +11806,93 @@ ${(fk&&fk!=='Semua Kelas')?`
   },300);
 }
 
+// ── REKAP PEMBINAAN GURU ──
+async function loadRekapBina(){
+  const kelas = $('bina-kelas').value;
+  const siswa = $('bina-siswa').value;
+  const res = $('bina-result');
+  if(!kelas||!siswa){ toast('Pilih kelas dan siswa','warn'); return; }
+  res.innerHTML = '<div style="text-align:center;padding:24px;color:var(--teks3)">⏳ Memuat...</div>';
+  try{
+    const url = CFG.APPS_SCRIPT_URL + `?action=getPembinaanSiswa&nama=${encodeURIComponent(siswa)}&kelas=${encodeURIComponent(kelas)}`;
+    const r = await fetch(url);
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'Gagal');
+    renderRekapBina(d.data||[], siswa, kelas);
+  }catch(e){
+    res.innerHTML = '<div style="text-align:center;padding:20px;color:var(--merah)">Gagal memuat data</div>';
+  }
+}
+
+function renderRekapBina(data, siswa, kelas){
+  const res = $('bina-result');
+  if(!data.length){
+    res.innerHTML = '<div style="text-align:center;padding:30px;color:var(--teks3)">Belum ada data pembinaan</div>';
+    return;
+  }
+  const HARI=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const BLN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const fmtTgl = tgl => {
+    try{
+      const p=tgl.split('/');
+      const d=p.length===3?new Date(p[2],p[1]-1,p[0]):new Date(tgl);
+      if(isNaN(d)) return tgl;
+      return HARI[d.getDay()]+', '+d.getDate()+' '+BLN[d.getMonth()]+' '+d.getFullYear();
+    }catch(e){return tgl;}
+  };
+
+  const WARNA = {
+    'Pembinaan Biasa':   {bg:'#eff6ff',c:'#1e40af'},
+    'Pembinaan 25 Poin': {bg:'#fffbeb',c:'#92400e'},
+    'Pembinaan 50 Poin': {bg:'#fff7ed',c:'#9a3412'},
+    'Pembinaan 75 Poin': {bg:'#fef2f2',c:'#991b1b'},
+  };
+
+  let html = `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:10px;">
+    <div style="font-size:14px;font-weight:800;color:var(--teks1)">${siswa}</div>
+    <div style="font-size:11px;color:var(--teks3)">Kelas ${kelas} · ${data.length} catatan pembinaan</div>
+  </div>`;
+  data.slice().reverse().forEach((r,i)=>{
+    const w = WARNA[r.pembinaan]||{bg:'#f8fafc',c:'#475569'};
+    html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--teks1)">${r.namaSiswa}</div>
+          <div style="font-size:11px;color:var(--teks3)">${r.kelas}</div>
+          ${r.perihal?`<div style="font-size:11px;color:var(--teks2);font-style:italic;margin-top:3px">${r.perihal}</div>`:''}
+          <div style="font-size:11px;color:var(--teks3);margin-top:3px">${fmtTgl(r.tanggal)}</div>
+          <div style="font-size:11px;color:var(--teks3)">${r.namaGuru||'-'} · ${r.statusPelapor||'-'}</div>
+          ${r.ortuWali?`<div style="font-size:11px;color:#166534;font-style:italic">Ortu/Wali: ${r.ortuWali}</div>`:''}
+        </div>
+        <div style="text-align:center;flex-shrink:0;">
+          <span style="background:${w.bg};color:${w.c};padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;">${r.pembinaan}</span>
+          ${r.totalPoin!==undefined?`<div style="font-size:10px;color:var(--teks3);margin-top:4px">Poin: ${r.totalPoin}</div>`:''}
+        </div>
+      </div>
+    </div>`;
+  });
+  res.innerHTML = html;
+}
+
 // ── REKAP HADIR SISWA ──
 let rhsData = null;
+
+function binaInitKelas(){
+  const sel = $('bina-kelas');
+  if(sel.options.length > 1) return;
+  const kelas = [...new Set(dJadwal.map(j=>j.kelas))].sort(sortKelas);
+  kelas.forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent='Kelas '+k; sel.appendChild(o); });
+}
+
+function binaLoadSiswa(){
+  const kelas = $('bina-kelas').value;
+  const sel = $('bina-siswa');
+  sel.innerHTML = '<option value="">-- Pilih Siswa --</option>';
+  if(!kelas) return;
+  dSiswa.filter(s=>s.kelas===kelas)
+    .sort((a,b)=>a.nama.localeCompare(b.nama))
+    .forEach(s=>{ const o=document.createElement('option'); o.value=s.nama; o.textContent=s.nama; sel.appendChild(o); });
+}
 
 function rhsInitKelas(){
   const sel = $('rhs-kelas');
@@ -12566,8 +12668,9 @@ function ttGoto(sub){
   document.querySelectorAll('.tt-sub').forEach(el=>el.classList.remove('aktif'));
   document.querySelectorAll('.btn-tt-tab').forEach(el=>el.classList.remove('aktif'));
   // Tampilkan yang dipilih
-  const subMap={input:'tt-input',kelas:'tt-kelas-sub',individu:'tt-individu-sub',hadir:'tt-hadir'};
+  const subMap={input:'tt-input',kelas:'tt-kelas-sub',individu:'tt-individu-sub',hadir:'tt-hadir',bina:'tt-bina'};
   if(sub==='hadir') rhsInitKelas();
+  if(sub==='bina') binaInitKelas();
   const el=$(subMap[sub]);
   if(el) el.classList.add('aktif');
   const btn=$('tt-tab-'+sub);
