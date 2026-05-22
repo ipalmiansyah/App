@@ -10381,6 +10381,11 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 
       <!-- ── INPUT PELANGGARAN ── -->
       <div class="tt-sub aktif" id="tt-input">
+        <!-- Submenu Pelanggaran / Pembinaan -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button id="tt-mode-pel" onclick="ttSetMode('pelanggaran')" style="flex:1;padding:9px;border-radius:10px;border:2px solid var(--merah);background:var(--merah);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">✏️ Pelanggaran</button>
+          <button id="tt-mode-bin" onclick="ttSetMode('pembinaan')" style="flex:1;padding:9px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">🤝 Pembinaan</button>
+        </div>
         <div class="form-card">
           <div class="form-row">
             <label>Kelas</label>
@@ -10394,15 +10399,30 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
               <option value="">-- Pilih Siswa --</option>
             </select>
           </div>
-          <div class="form-row">
-            <label>Pelanggaran</label>
-            <select id="tt-pelanggaran" onchange="ttShowPoin()">
-              <option value="">-- Pilih Pelanggaran --</option>
-            </select>
+          <!-- PELANGGARAN -->
+          <div id="tt-form-pel">
+            <div class="form-row">
+              <label>Pelanggaran</label>
+              <select id="tt-pelanggaran" onchange="ttShowPoin()">
+                <option value="">-- Pilih Pelanggaran --</option>
+              </select>
+            </div>
+            <div class="form-row" id="tt-poin-row" style="display:none;">
+              <label>Poin</label>
+              <div id="tt-poin-val" style="font-weight:800;font-size:18px;color:var(--merah);"></div>
+            </div>
           </div>
-          <div class="form-row" id="tt-poin-row" style="display:none;">
-            <label>Poin</label>
-            <div id="tt-poin-val" style="font-weight:800;font-size:18px;color:var(--merah);"></div>
+          <!-- PEMBINAAN -->
+          <div id="tt-form-bin" style="display:none;">
+            <div class="form-row">
+              <label>Jenis Pembinaan</label>
+              <select id="tt-jenis-bin">
+                <option value="Pembinaan Biasa">Pembinaan Biasa</option>
+                <option value="Pembinaan 25 Poin">Pembinaan 25 Poin</option>
+                <option value="Pembinaan 50 Poin">Pembinaan 50 Poin</option>
+                <option value="Pembinaan 75 Poin">Pembinaan 75 Poin</option>
+              </select>
+            </div>
           </div>
           <div class="form-row">
             <label>Tanggal Kejadian</label>
@@ -10417,10 +10437,12 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
             <select id="tt-status-pelapor">
               <option value="Guru Mapel">Guru Mapel</option>
               <option value="Wali Kelas">Wali Kelas</option>
+              <option value="Guru Wali">Guru Wali</option>
               <option value="Guru Piket">Guru Piket</option>
               <option value="Guru BK">Guru BK</option>
+              <option value="Wakil Kesiswaan">Wakil Kesiswaan</option>
               <option value="Kepala Sekolah">Kepala Sekolah</option>
-              <option value="Wakil Kepsek">Wakil Kepsek</option>
+              <option value="Sidak">Sidak</option>
             </select>
           </div>
           <button onclick="ttSubmit()" id="tt-btn-submit" style="width:auto;align-self:center;padding:10px 32px;border-radius:20px;border:none;background:linear-gradient(135deg,var(--g4),var(--g5));color:#fff;font-weight:800;font-size:13px;letter-spacing:1px;cursor:pointer;font-family:var(--font);">SUBMIT</button>
@@ -10723,7 +10745,7 @@ const CFG = {
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyB2ESAAwcPW2vufabMbbLGkEEcp-_YksDtU_9QCW7_e5tXzxQA98TWfcR8HrqtiRaoJw/exec',
   SEKOLAH_LAT:  -2.517743,
   SEKOLAH_LNG:  102.650029,
-  RADIUS_METER: 70000,
+  RADIUS_METER: 70,
   NAMA_SEKOLAH: 'SMP Negeri 05 Sarolangun',
   ADMIN_PASS: 'admin2025',
   KEPSEK:       'Sukardiman, M.Pd.',
@@ -11900,6 +11922,21 @@ async function rhsCetak(){
   win.document.close();
 }
 
+// ── MODE TATIB: PELANGGARAN / PEMBINAAN ──
+let ttMode = 'pelanggaran';
+function ttSetMode(mode){
+  ttMode = mode;
+  const isPel = mode === 'pelanggaran';
+  $('tt-form-pel').style.display = isPel ? '' : 'none';
+  $('tt-form-bin').style.display = isPel ? 'none' : '';
+  $('tt-mode-pel').style.background = isPel ? 'var(--merah)' : 'white';
+  $('tt-mode-pel').style.color = isPel ? '#fff' : 'var(--teks2)';
+  $('tt-mode-pel').style.borderColor = isPel ? 'var(--merah)' : 'var(--border)';
+  $('tt-mode-bin').style.background = isPel ? 'white' : '#166534';
+  $('tt-mode-bin').style.color = isPel ? 'var(--teks2)' : '#fff';
+  $('tt-mode-bin').style.borderColor = isPel ? 'var(--border)' : '#166534';
+}
+
 // ── MENU BEL ──
 let belOtomatisStatus=true;
 
@@ -12223,15 +12260,34 @@ function ttShowPoin(){
 async function ttSubmit(){
   const kelas=$('tt-kelas').value;
   const siswa=$('tt-siswa').value;
-  const idxPel=$('tt-pelanggaran').value;
   const tgl=$('tt-tgl-kejadian').value;
   const status=$('tt-status-pelapor').value;
-  if(!kelas||!siswa||idxPel===''||!tgl){
-    toast('Lengkapi semua isian'); return;
-  }
-  const pel=dTataTertib[parseInt(idxPel)];
   const namaGuru=guruLogin?.nama||'';
   const btn=$('tt-btn-submit');
+
+  if(!kelas||!siswa||!tgl){ toast('Lengkapi semua isian'); return; }
+
+  // ── PEMBINAAN ──
+  if(ttMode==='pembinaan'){
+    const jenisBin=$('tt-jenis-bin').value;
+    btn.disabled=true; btn.textContent='Menyimpan...';
+    try{
+      const r=await fetch(CFG.APPS_SCRIPT_URL,{
+        method:'POST',headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({action:'submitPembinaan',namaGuru,statusPelapor:status,namaSiswa:siswa,kelas,pembinaan:jenisBin,tanggal:tgl})
+      });
+      const d=await r.json();
+      if(d.ok){ toast('✅ Pembinaan berhasil dicatat'); $('tt-siswa').value=''; }
+      else toast('Gagal: '+(d.error||'Error'),'warn');
+    }catch(e){ toast('Gagal kirim data','warn'); }
+    finally{ btn.disabled=false; btn.textContent='SUBMIT'; }
+    return;
+  }
+
+  // ── PELANGGARAN ──
+  const idxPel=$('tt-pelanggaran').value;
+  if(idxPel===''){ toast('Pilih pelanggaran'); return; }
+  const pel=dTataTertib[parseInt(idxPel)];
   btn.disabled=true; btn.textContent='Menyimpan...';
   try{
     const r=await fetch(CFG.APPS_SCRIPT_URL,{
