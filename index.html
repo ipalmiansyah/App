@@ -10423,6 +10423,10 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
                 <option value="Pembinaan 75 Poin">Pembinaan 75 Poin</option>
               </select>
             </div>
+            <div class="form-row">
+              <label>Orang Tua/Wali <span style="font-size:10px;font-weight:400;color:var(--teks3)">(opsional)</span></label>
+              <input type="text" id="tt-ortu-bin" placeholder="Nama orang tua/wali yang hadir" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;width:100%;background:var(--bg);color:var(--teks1);">
+            </div>
           </div>
           <div class="form-row">
             <label>Tanggal Kejadian</label>
@@ -12274,10 +12278,10 @@ async function ttSubmit(){
     try{
       const r=await fetch(CFG.APPS_SCRIPT_URL,{
         method:'POST',headers:{'Content-Type':'text/plain'},
-        body:JSON.stringify({action:'submitPembinaan',namaGuru,statusPelapor:status,namaSiswa:siswa,kelas,pembinaan:jenisBin,tanggal:tgl})
+        body:JSON.stringify({action:'submitPembinaan',namaGuru,statusPelapor:status,namaSiswa:siswa,kelas,pembinaan:jenisBin,tanggal:tgl,ortuWali:($('tt-ortu-bin').value||'').trim()})
       });
       const d=await r.json();
-      if(d.ok){ toast('✅ Pembinaan berhasil dicatat'); $('tt-siswa').value=''; }
+      if(d.ok){ toast('✅ Pembinaan berhasil dicatat'); $('tt-siswa').value=''; $('tt-ortu-bin').value=''; }
       else toast('Gagal: '+(d.error||'Error'),'warn');
     }catch(e){ toast('Gagal kirim data','warn'); }
     finally{ btn.disabled=false; btn.textContent='SUBMIT'; }
