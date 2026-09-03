@@ -10412,7 +10412,12 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
           <div id="tt-form-pel">
             <div class="form-row">
               <label>Pelanggaran</label>
-              <select id="tt-pelanggaran" onchange="ttShowPoin()">
+              <div style="position:relative;">
+                <input type="text" id="tt-pel-search" placeholder="Ketik atau klik untuk lihat semua..." autocomplete="off" oninput="ttPelSearch(this.value)" onfocus="ttPelSearch(this.value)" style="width:100%;padding:12px 40px 12px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;color:var(--teks1);background:var(--card);box-sizing:border-box;">
+                <button id="tt-pel-clear" onclick="ttPelClear()" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--teks3);padding:0;line-height:1;">✕</button>
+                <div id="tt-pel-dropdown" style="display:none;position:fixed;background:var(--card);border:1.5px solid var(--border);border-radius:10px;z-index:9999;max-height:260px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.15);"></div>
+              </div>
+              <select id="tt-pelanggaran" style="display:none;">
                 <option value="">-- Pilih Pelanggaran --</option>
               </select>
             </div>
@@ -12102,6 +12107,8 @@ function ttIndClear(){
 document.addEventListener('click', function(e){
   if(!e.target.closest('#tt-individu-sub')){ const d=$('tt-ind-dropdown'); if(d) d.style.display='none'; }
   if(!e.target.closest('#tt-bina')){ const d=$('bina-dropdown'); if(d) d.style.display='none'; }
+  if(!e.target.closest('#tt-input')){ const d=$('tt-input-dropdown'); if(d) d.style.display='none'; }
+  if(!e.target.closest('#tt-form-pel')){ const d=$('tt-pel-dropdown'); if(d) d.style.display='none'; }
 });
 
 // Search Bina
@@ -12473,6 +12480,50 @@ function ttPopulatePelanggaran(){
   });
 }
 
+// ── SEARCH PELANGGARAN (klik kosong = semua, ketik = tersaring) ──
+function ttPelSearch(val){
+  const clear = $('tt-pel-clear');
+  const dd = $('tt-pel-dropdown');
+  if(clear) clear.style.display = val ? 'block' : 'none';
+  const hasil = dTataTertib
+    .map((t,i)=>({jenis:t.jenis, poin:t.poin, idx:i}))
+    .filter(t=>t.jenis.toLowerCase().includes(val.toLowerCase()));
+  if(!hasil.length){ dd.style.display='none'; return; }
+  dd.innerHTML = hasil.map(t=>`
+    <div onclick="ttPelPilih(${t.idx})"
+      style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;"
+      onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <span style="font-weight:600;color:var(--teks1)">${t.jenis}</span>
+      <span style="font-size:11px;color:var(--merah);white-space:nowrap;">${t.poin} poin</span>
+    </div>`).join('');
+  const inp = $('tt-pel-search');
+  if(inp){
+    const rect = inp.getBoundingClientRect();
+    dd.style.left = rect.left+'px';
+    dd.style.width = rect.width+'px';
+    dd.style.top = (rect.bottom+4)+'px';
+  }
+  dd.style.display='block';
+}
+
+function ttPelPilih(idx){
+  const t = dTataTertib[idx];
+  if(!t) return;
+  $('tt-pel-search').value = t.jenis;
+  $('tt-pel-dropdown').style.display='none';
+  $('tt-pel-clear').style.display='block';
+  $('tt-pelanggaran').value = idx;
+  ttShowPoin();
+}
+
+function ttPelClear(){
+  $('tt-pel-search').value='';
+  $('tt-pel-dropdown').style.display='none';
+  $('tt-pel-clear').style.display='none';
+  $('tt-pelanggaran').value='';
+  ttShowPoin();
+}
+
 function ttRefresh(){
   try{ localStorage.removeItem(TT_CACHE_KEY); }catch(e){}
   dTTLoaded=false;
@@ -12598,6 +12649,8 @@ async function ttSubmit(){
       toast('✅ Pelanggaran tersimpan');
       $('tt-siswa').value='';
       $('tt-pelanggaran').value='';
+      $('tt-pel-search').value='';
+      $('tt-pel-clear').style.display='none';
       $('tt-poin-row').style.display='none';
       ttInputClear();
       $('tt-siswa-row').style.display='none';
@@ -12851,7 +12904,21 @@ function ttCetakPDFKelas(){
 }
 
 
+// Bersihkan semua kotak search Tata Tertib (dipanggil setiap pindah tab)
+function ttResetSearchBoxes(){
+  ['tt-ind-search','bina-search','tt-input-search','tt-pel-search'].forEach(id=>{
+    const el=$(id); if(el) el.value='';
+  });
+  ['tt-ind-dropdown','bina-dropdown','tt-input-dropdown','tt-pel-dropdown'].forEach(id=>{
+    const el=$(id); if(el) el.style.display='none';
+  });
+  ['tt-ind-clear','bina-clear','tt-input-clear','tt-pel-clear'].forEach(id=>{
+    const el=$(id); if(el) el.style.display='none';
+  });
+}
+
 function ttGoto(sub){
+  ttResetSearchBoxes();
   // Sembunyikan semua sub-tab
   document.querySelectorAll('.tt-sub').forEach(el=>el.classList.remove('aktif'));
   document.querySelectorAll('.btn-tt-tab').forEach(el=>el.classList.remove('aktif'));
@@ -13179,6 +13246,7 @@ function rmkCetak(){
 const _origGoto=goto;
 goto=function(pg){
   _origGoto(pg);
+  ttResetSearchBoxes();
   if(pg==='tt'){
     if(guruLogin?.nama) $('tt-pelapor-nama').textContent=guruLogin.nama;
     ttLoadData();
