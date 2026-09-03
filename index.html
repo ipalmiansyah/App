@@ -10389,12 +10389,20 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
         </div>
         <div class="form-card">
           <div class="form-row">
+            <label>Cari Nama Siswa</label>
+            <div style="position:relative;">
+              <input type="text" id="tt-input-search" placeholder="Ketik nama siswa..." autocomplete="off" oninput="ttInputSearch(this.value)" style="width:100%;padding:12px 40px 12px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;color:var(--teks1);background:var(--card);box-sizing:border-box;">
+              <button id="tt-input-clear" onclick="ttInputClear()" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--teks3);padding:0;line-height:1;">✕</button>
+              <div id="tt-input-dropdown" style="display:none;position:fixed;background:var(--card);border:1.5px solid var(--border);border-radius:10px;z-index:9999;max-height:260px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.15);"></div>
+            </div>
+          </div>
+          <div class="form-row">
             <label>Kelas</label>
-            <select id="tt-kelas" onchange="ttLoadSiswa()">
+            <select id="tt-kelas" onchange="ttLoadSiswa(); $('tt-siswa-row').style.display='flex';">
               <option value="">-- Pilih Kelas --</option>
             </select>
           </div>
-          <div class="form-row">
+          <div class="form-row" id="tt-siswa-row" style="display:none;">
             <label>Nama Siswa</label>
             <select id="tt-siswa">
               <option value="">-- Pilih Siswa --</option>
@@ -10838,6 +10846,8 @@ const nowMin = () => { const d=new Date(); const wib=new Date(d.getTime()+7*60*6
 const pJam = s => { const n=(s||'00:00').replace('.',':'); const[h,m]=n.split(':').map(Number); return h*60+(m||0); };
 const hariIni = () => new Date(new Date().getTime()+7*60*60*1000).toLocaleDateString('id-ID',{weekday:'long',timeZone:'UTC'});
 const tglStr  = (d=new Date()) => new Date(d.getTime()+7*60*60*1000).toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'});
+// Tanggal hari ini (WIB) dalam format yyyy-mm-dd, untuk isi default <input type="date">
+const tglISOHariIni = () => new Date(Date.now()+7*60*60*1000).toISOString().slice(0,10);
 const tglISO  = (d=new Date()) => d.toISOString().split('T')[0];
 const inisial = n => n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,3);
 
@@ -11018,6 +11028,12 @@ function goto(name){
   if(name==='monitor') renderMonitor();
   if(name==='rekap'){ fillFilters(); renderRekap(); rmkInitKelas(); }
   if(name==='bel') initBelMenu();
+  if(name==='tt' && $('tt-input').classList.contains('aktif')){
+    const tglIn=$('tt-tgl-kejadian');
+    if(tglIn&&!tglIn.value) tglIn.value=tglISOHariIni();
+    const namaGuru=guruLogin?.nama||'—';
+    $('tt-pelapor-nama').textContent=namaGuru;
+  }
 }
 function cekGPS(){
   if(!navigator.geolocation){ setGPS('err','GPS tidak tersedia'); return; }
@@ -12475,6 +12491,49 @@ function ttLoadSiswa(){
     .forEach(s=>sel.innerHTML+=`<option value="${s.nama}">${s.nama}</option>`);
 }
 
+// ── SEARCH NAMA SISWA (Form Input Pelanggaran/Pembinaan) ──
+function ttInputSearch(val){
+  const clear = $('tt-input-clear');
+  const dd = $('tt-input-dropdown');
+  if(clear) clear.style.display = val ? 'block' : 'none';
+  if(!val.trim()){ dd.style.display='none'; return; }
+  const hasil = dSiswa.filter(s=>s.nama.toLowerCase().includes(val.toLowerCase())).slice(0,10);
+  if(!hasil.length){ dd.style.display='none'; return; }
+  dd.innerHTML = hasil.map(s=>`
+    <div onclick="ttInputPilih('${s.nama.replace(/'/g,"\'")}','${s.kelas}')"
+      style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"
+      onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <span style="font-weight:600;color:var(--teks1)">${s.nama}</span>
+      <span style="font-size:11px;color:var(--teks3)">${s.kelas}</span>
+    </div>`).join('');
+  const inp = $('tt-input-search');
+  if(inp){
+    const rect = inp.getBoundingClientRect();
+    dd.style.left = rect.left+'px';
+    dd.style.width = rect.width+'px';
+    dd.style.top = (rect.bottom+4)+'px';
+  }
+  dd.style.display='block';
+}
+
+function ttInputPilih(nama, kelas){
+  const inp = $('tt-input-search');
+  if(inp) inp.value = nama;
+  $('tt-input-dropdown').style.display='none';
+  $('tt-input-clear').style.display='block';
+  // Isi Kelas & Nama Siswa di belakang layar (format kirim ke sheet tidak berubah)
+  $('tt-kelas').value = kelas;
+  ttLoadSiswa();
+  $('tt-siswa').value = nama;
+}
+
+function ttInputClear(){
+  const inp = $('tt-input-search');
+  if(inp) inp.value='';
+  $('tt-input-dropdown').style.display='none';
+  $('tt-input-clear').style.display='none';
+}
+
 function ttShowPoin(){
   const sel=$('tt-pelanggaran');
   const opt=sel.options[sel.selectedIndex];
@@ -12507,7 +12566,7 @@ async function ttSubmit(){
         body:JSON.stringify({action:'submitPembinaan',namaGuru,statusPelapor:status,namaSiswa:siswa,kelas,pembinaan:jenisBin,perihal:($('tt-perihal-bin').value||'').trim(),tanggal:tgl,ortuWali:($('tt-ortu-bin').value||'').trim()})
       });
       const d=await r.json();
-      if(d.ok){ toast('✅ Pembinaan berhasil dicatat'); $('tt-siswa').value=''; $('tt-perihal-bin').value=''; $('tt-ortu-bin').value=''; }
+      if(d.ok){ toast('✅ Pembinaan berhasil dicatat'); $('tt-siswa').value=''; $('tt-perihal-bin').value=''; $('tt-ortu-bin').value=''; ttInputClear(); $('tt-siswa-row').style.display='none'; }
       else toast('Gagal: '+(d.error||'Error'),'warn');
     }catch(e){ toast('Gagal kirim data','warn'); }
     finally{ btn.disabled=false; btn.textContent='SUBMIT'; }
@@ -12540,6 +12599,8 @@ async function ttSubmit(){
       $('tt-siswa').value='';
       $('tt-pelanggaran').value='';
       $('tt-poin-row').style.display='none';
+      ttInputClear();
+      $('tt-siswa-row').style.display='none';
     } else { toast('Gagal: '+(d.error||'error')); }
   }catch(e){
     console.error('[TT] Submit error:',e);
@@ -12803,7 +12864,7 @@ function ttGoto(sub){
   if(btn) btn.classList.add('aktif');
   if(sub==='input'){
     const tglIn=$('tt-tgl-kejadian');
-    if(tglIn&&!tglIn.value) tglIn.value=new Date().toISOString().slice(0,10);
+    if(tglIn&&!tglIn.value) tglIn.value=tglISOHariIni();
     const namaGuru=guruLogin?.nama||'—';
     $('tt-pelapor-nama').textContent=namaGuru;
   }
