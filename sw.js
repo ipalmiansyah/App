@@ -3,7 +3,7 @@
 //  SMP Negeri 05 Sarolangun
 // ═══════════════════════════════════════════════════════
 
-const CACHE_NAME = 'agenda-guru-v1';
+const CACHE_NAME = 'agenda-guru-v2';
 
 // File yang di-cache untuk offline
 const CACHE_FILES = [
@@ -91,7 +91,21 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // File lokal (HTML, JS, CSS) — cache-first dengan update di background
+  // index.html — network-first, supaya guru selalu dapat versi terbaru saat online
+  if (url.pathname.endsWith('/index.html') || url.pathname.endsWith('/')) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // File lokal lain (admin.html, monitor.html, JS, CSS) — cache-first dengan update di background
   event.respondWith(
     caches.match(event.request).then(cached => {
       const fetchPromise = fetch(event.request).then(response => {
