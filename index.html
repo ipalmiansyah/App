@@ -10482,7 +10482,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
               style="flex:1;border:none;outline:none;font-size:14px;background:transparent;color:var(--teks1);font-family:inherit;">
             <button id="tt-ind-clear" onclick="ttIndClear()" style="display:none;background:none;border:none;cursor:pointer;font-size:16px;color:var(--teks3);padding:0;line-height:1;">✕</button>
           </div>
-          <div id="tt-ind-dropdown" style="display:none;position:fixed;left:16px;right:16px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;z-index:9999;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.15);"></div>
+          <div id="tt-ind-dropdown" style="display:none;position:absolute;left:16px;right:16px;top:100%;margin-top:4px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;z-index:9999;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.15);"></div>
         </div>
         <!-- Detail individu -->
         <div id="tt-individu-detail" style="padding:0 16px;flex:1;overflow:auto;display:none;">
@@ -10511,7 +10511,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
               style="flex:1;border:none;outline:none;font-size:13px;background:transparent;color:var(--teks1);font-family:inherit;">
             <button id="bina-clear" onclick="binaClear()" style="display:none;background:none;border:none;cursor:pointer;font-size:16px;color:var(--teks3);padding:0;line-height:1;">✕</button>
           </div>
-          <div id="bina-dropdown" style="display:none;position:fixed;left:16px;right:16px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;z-index:9999;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.15);"></div>
+          <div id="bina-dropdown" style="display:none;position:absolute;left:16px;right:16px;top:100%;margin-top:4px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;z-index:9999;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.15);"></div>
         </div>
         <div id="bina-result"></div>
       </div>
@@ -12053,9 +12053,6 @@ function ttIndSearch(val){
       <span style="font-weight:600;color:var(--teks1)">${s.nama}</span>
       <span style="font-size:11px;color:var(--teks3)">${s.kelas}</span>
     </div>`).join('');
-  // Posisikan tepat di bawah input
-  const inp2 = $('tt-ind-search');
-  if(inp2){ const rect=inp2.getBoundingClientRect(); dd.style.top=(rect.bottom+4)+'px'; }
   dd.style.display='block';
 }
 
@@ -12097,8 +12094,6 @@ function binaSearch(val){
       <span style="font-weight:600;color:var(--teks1)">${s.nama}</span>
       <span style="font-size:11px;color:var(--teks3)">${s.kelas}</span>
     </div>`).join('');
-  const binp = $('bina-search');
-  if(binp){ const rect=binp.getBoundingClientRect(); dd.style.top=(rect.bottom+4)+'px'; }
   dd.style.display='block';
 }
 
@@ -12784,7 +12779,6 @@ function ttGoto(sub){
   // Tampilkan yang dipilih
   const subMap={input:'tt-input',kelas:'tt-kelas-sub',individu:'tt-individu-sub',hadir:'tt-hadir',bina:'tt-bina'};
   if(sub==='hadir') rhsInitKelas();
-  if(sub==='bina') binaInitKelas();
   const el=$(subMap[sub]);
   if(el) el.classList.add('aktif');
   const btn=$('tt-tab-'+sub);
