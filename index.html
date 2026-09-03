@@ -10398,7 +10398,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
           </div>
           <div class="form-row">
             <label>Kelas</label>
-            <select id="tt-kelas" onchange="ttLoadSiswa(); $('tt-siswa-row').style.display='flex';">
+            <select id="tt-kelas" disabled style="background:var(--bg);cursor:not-allowed;">
               <option value="">-- Pilih Kelas --</option>
             </select>
           </div>
@@ -12173,6 +12173,7 @@ async function loadRekapBinaByNama(nama, kelas){
 let ttMode = 'pelanggaran';
 function ttSetMode(mode){
   ttMode = mode;
+  ttResetSearchBoxes();
   const isPel = mode === 'pelanggaran';
   $('tt-form-pel').style.display = isPel ? '' : 'none';
   $('tt-form-bin').style.display = isPel ? 'none' : '';
