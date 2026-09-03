@@ -10398,9 +10398,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
           </div>
           <div class="form-row">
             <label>Kelas</label>
-            <select id="tt-kelas" disabled style="background:var(--bg);cursor:not-allowed;">
-              <option value="">-- Pilih Kelas --</option>
-            </select>
+            <input type="text" id="tt-kelas" readonly placeholder="Otomatis terisi dari nama siswa" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;color:var(--teks1);background:var(--bg);box-sizing:border-box;cursor:default;">
           </div>
           <div class="form-row" id="tt-siswa-row" style="display:none;">
             <label>Nama Siswa</label>
@@ -12471,7 +12469,7 @@ function ttPopulateKelas(){
     const srcJadwal = dJadwal.length > 0 ? dJadwal : DATA_JADWAL_LOKAL;
     kelas=[...new Set(srcJadwal.map(j=>j.kelas))].sort(sortKelas);
   }
-  ['tt-kelas','tt-rkelas','tt-ind-kelas-sel'].forEach(id=>{
+  ['tt-rkelas','tt-ind-kelas-sel'].forEach(id=>{
     const sel=$(id);
     if(!sel) return;
     sel.innerHTML='<option value="">-- Pilih Kelas --</option>';
