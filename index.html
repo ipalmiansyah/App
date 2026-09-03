@@ -11918,10 +11918,16 @@ function binaLoadSiswa(){
 
 function rhsInitKelas(){
   const sel = $('rhs-kelas');
-  if(sel.options.length > 1) return;
-  const srcJadwal = dJadwal.length > 0 ? dJadwal : DATA_JADWAL_LOKAL;
-  const kelas = [...new Set(srcJadwal.map(j=>j.kelas))].sort(sortKelas);
-  kelas.forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent='Kelas '+k; sel.appendChild(o); });
+  if(sel.options.length <= 1){
+    const srcJadwal = dJadwal.length > 0 ? dJadwal : DATA_JADWAL_LOKAL;
+    const kelas = [...new Set(srcJadwal.map(j=>j.kelas))].sort(sortKelas);
+    kelas.forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent='Kelas '+k; sel.appendChild(o); });
+  }
+  // Isi default tanggal hari ini (WIB) kalau masih kosong
+  const dari = $('rhs-dari'), sampai = $('rhs-sampai');
+  const hariIni = tglISOHariIni();
+  if(dari && !dari.value) dari.value = hariIni;
+  if(sampai && !sampai.value) sampai.value = hariIni;
 }
 
 async function rhsTampilkan(){
