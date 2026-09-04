@@ -10566,6 +10566,22 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
       </table>
     </div>
 
+    <!-- ── POPUP DETAIL SISWA PER GURU (Stat) ── -->
+    <div id="stat-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;" onclick="if(event.target===this) statCloseDetail()">
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92%,480px);max-height:80vh;background:var(--card);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+        <div style="position:sticky;top:0;background:var(--card);z-index:2;">
+          <div style="padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <div id="stat-modal-title" style="font-weight:800;font-size:15px;color:var(--teks1);">Detail</div>
+            <button onclick="statCloseDetail()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--teks3);padding:2px 6px;line-height:1;">✕</button>
+          </div>
+          <div style="padding:10px 16px;border-bottom:1px solid var(--border);">
+            <input type="text" id="stat-modal-search" placeholder="Cari nama siswa..." autocomplete="off" oninput="statFilterDetail(this.value)" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:13px;color:var(--teks1);background:var(--bg);box-sizing:border-box;">
+          </div>
+        </div>
+        <div id="stat-modal-body" style="overflow-y:auto;flex:1;"></div>
+      </div>
+    </div>
+
   </div><!-- /pages -->
 
   <div class="bottom-nav">
@@ -13302,6 +13318,7 @@ async function statLoadData(){
 
 function statSetMode(mode){
   statMode = mode;
+  statCloseDetail();
   const isPel = mode === 'pelanggaran';
   $('stat-mode-pel').style.background = isPel ? 'var(--merah)' : 'white';
   $('stat-mode-pel').style.color = isPel ? '#fff' : 'var(--teks2)';
@@ -13328,11 +13345,68 @@ function statRender(){
     const aktif = row.guru === namaSaya;
     const bg = aktif ? 'background:var(--hijau-muda,#dcfce7);' : '';
     const fw = aktif ? 'font-weight:800;' : '';
+    const namaEsc = row.guru.replace(/'/g,"\\'");
+    const jumlahCell = row.jumlah > 0
+      ? `<td style="padding:10px 8px;text-align:center;font-size:14px;color:var(--g4,#166534);${fw}cursor:pointer;text-decoration:underline;text-underline-offset:2px;" onclick="statOpenDetail('${namaEsc}')">${row.jumlah}</td>`
+      : `<td style="padding:10px 8px;text-align:center;font-size:14px;color:var(--teks3);${fw}">${row.jumlah}</td>`;
     return `<tr style="border-top:1px solid var(--border);${bg}">
       <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--teks2);">${i+1}</td>
       <td style="padding:10px 8px;font-size:13px;color:var(--teks1);${fw}">${row.guru}${aktif?' (Saya)':''}</td>
-      <td style="padding:10px 8px;text-align:center;font-size:14px;color:var(--teks1);${fw}">${row.jumlah}</td>
+      ${jumlahCell}
     </tr>`;
+  }).join('');
+}
+
+// ── POPUP DETAIL SISWA PER GURU ──
+let statDetailData = [];
+let statDetailMode = 'pelanggaran';
+
+function statOpenDetail(guru){
+  statDetailMode = statMode;
+  $('stat-modal-title').textContent = guru;
+  $('stat-modal-search').value = '';
+  $('stat-modal-body').innerHTML = '<div style="padding:24px;text-align:center;color:var(--teks3);font-size:13px;">Memuat...</div>';
+  $('stat-modal-overlay').style.display = 'block';
+  const action = statDetailMode === 'pelanggaran' ? 'getPelanggaranByGuru' : 'getPembinaanByGuru';
+  fetch(CFG.APPS_SCRIPT_URL + '?action=' + action + '&guru=' + encodeURIComponent(guru))
+    .then(r => r.json())
+    .then(d => {
+      statDetailData = d.data || [];
+      statRenderDetail(statDetailData);
+    })
+    .catch(() => {
+      $('stat-modal-body').innerHTML = '<div style="padding:24px;text-align:center;color:var(--teks3);font-size:13px;">Gagal memuat data. Periksa koneksi.</div>';
+    });
+}
+
+function statCloseDetail(){
+  $('stat-modal-overlay').style.display = 'none';
+}
+
+function statFilterDetail(val){
+  const filtered = statDetailData.filter(d => (d.namaSiswa||'').toLowerCase().includes(val.toLowerCase()));
+  statRenderDetail(filtered);
+}
+
+function statRenderDetail(list){
+  if(!list.length){
+    $('stat-modal-body').innerHTML = '<div style="padding:24px;text-align:center;color:var(--teks3);font-size:13px;">Tidak ada data.</div>';
+    return;
+  }
+  $('stat-modal-body').innerHTML = list.map(d => {
+    if(statDetailMode === 'pelanggaran'){
+      return `<div style="padding:10px 16px;border-bottom:1px solid var(--border);">
+        <div style="font-weight:700;font-size:13px;color:var(--teks1);">${d.namaSiswa} <span style="font-weight:400;color:var(--teks3);">(${d.kelas})</span></div>
+        <div style="font-size:12px;color:var(--teks2);margin-top:2px;">${d.pelanggaran} · <span style="color:var(--merah);font-weight:600;">${d.poin} poin</span></div>
+        <div style="font-size:11px;color:var(--teks3);margin-top:2px;">${d.tanggal}</div>
+      </div>`;
+    } else {
+      return `<div style="padding:10px 16px;border-bottom:1px solid var(--border);">
+        <div style="font-weight:700;font-size:13px;color:var(--teks1);">${d.namaSiswa} <span style="font-weight:400;color:var(--teks3);">(${d.kelas})</span></div>
+        <div style="font-size:12px;color:var(--teks2);margin-top:2px;">${d.pembinaan}${d.perihal?(' — '+d.perihal):''}</div>
+        <div style="font-size:11px;color:var(--teks3);margin-top:2px;">${d.tanggal}</div>
+      </div>`;
+    }
   }).join('');
 }
 
@@ -13340,6 +13414,7 @@ const _origGoto=goto;
 goto=function(pg){
   _origGoto(pg);
   ttResetSearchBoxes();
+  statCloseDetail();
   if(pg==='tt'){
     if(guruLogin?.nama) $('tt-pelapor-nama').textContent=guruLogin.nama;
     ttLoadData();
