@@ -10545,6 +10545,27 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
       </div>
     </div>
 
+    <!-- ── STATISTIK PARTISIPASI GURU ── -->
+    <div class="page" id="pg-stat">
+      <div class="pg-hdr"><h2>📊 Statistik Partisipasi Guru</h2></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button id="stat-mode-pel" onclick="statSetMode('pelanggaran')" style="flex:1;padding:9px;border-radius:10px;border:2px solid var(--merah);background:var(--merah);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">✏️ Pelanggaran</button>
+        <button id="stat-mode-bin" onclick="statSetMode('pembinaan')" style="flex:1;padding:9px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">🤝 Pembinaan</button>
+      </div>
+      <div id="stat-loading" style="text-align:center;padding:30px;color:var(--teks3);font-size:13px;">Memuat data...</div>
+      <div id="stat-empty" style="display:none;text-align:center;padding:30px;color:var(--teks3);font-size:13px;">Belum ada data.</div>
+      <table id="stat-tbl" style="display:none;width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+        <thead>
+          <tr style="background:var(--bg);">
+            <th style="padding:10px 8px;text-align:center;font-size:12px;color:var(--teks3);width:40px;">No</th>
+            <th style="padding:10px 8px;text-align:left;font-size:12px;color:var(--teks3);">Nama</th>
+            <th id="stat-th-jumlah" style="padding:10px 8px;text-align:center;font-size:12px;color:var(--teks3);width:100px;">Jumlah Laporan</th>
+          </tr>
+        </thead>
+        <tbody id="stat-tbody"></tbody>
+      </table>
+    </div>
+
   </div><!-- /pages -->
 
   <div class="bottom-nav">
@@ -10567,6 +10588,10 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     <button class="nav-item" id="nv-tt" onclick="goto('tt')">
       <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       <span class="nav-label">Tata Tertib</span>
+    </button>
+    <button class="nav-item" id="nv-stat" onclick="goto('stat')">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="nav-label">Stat</span>
     </button>
   </div>
 </div>
@@ -10782,7 +10807,7 @@ const CFG = {
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyB2ESAAwcPW2vufabMbbLGkEEcp-_YksDtU_9QCW7_e5tXzxQA98TWfcR8HrqtiRaoJw/exec',
   SEKOLAH_LAT:  -2.517743,
   SEKOLAH_LNG:  102.650029,
-  RADIUS_METER: 70000,
+  RADIUS_METER: 70,
   NAMA_SEKOLAH: 'SMP Negeri 05 Sarolangun',
   ADMIN_PASS: 'admin2025',
   KEPSEK:       'Sukardiman, M.Pd.',
@@ -13253,6 +13278,64 @@ function rmkCetak(){
 }
 // ── END REKAP PER KELAS ──
 
+// ── STATISTIK PARTISIPASI GURU ──
+let dStatGuru = { pelanggaran: [], pembinaan: [] };
+let statLoaded = false;
+let statMode = 'pelanggaran';
+
+async function statLoadData(){
+  $('stat-loading').style.display = 'block';
+  $('stat-empty').style.display = 'none';
+  $('stat-tbl').style.display = 'none';
+  try{
+    const r = await fetch(CFG.APPS_SCRIPT_URL + '?action=getStatGuru');
+    const d = await r.json();
+    dStatGuru.pelanggaran = d.pelanggaran || [];
+    dStatGuru.pembinaan = d.pembinaan || [];
+    statLoaded = true;
+    statRender();
+  }catch(e){
+    console.error('[Stat] Gagal load data:', e);
+    $('stat-loading').textContent = 'Gagal memuat data. Periksa koneksi.';
+  }
+}
+
+function statSetMode(mode){
+  statMode = mode;
+  const isPel = mode === 'pelanggaran';
+  $('stat-mode-pel').style.background = isPel ? 'var(--merah)' : 'white';
+  $('stat-mode-pel').style.color = isPel ? '#fff' : 'var(--teks2)';
+  $('stat-mode-pel').style.borderColor = isPel ? 'var(--merah)' : 'var(--border)';
+  $('stat-mode-bin').style.background = isPel ? 'white' : '#166534';
+  $('stat-mode-bin').style.color = isPel ? 'var(--teks2)' : '#fff';
+  $('stat-mode-bin').style.borderColor = isPel ? 'var(--border)' : '#166534';
+  $('stat-th-jumlah').textContent = isPel ? 'Jumlah Laporan' : 'Jumlah Binaan';
+  statRender();
+}
+
+function statRender(){
+  const data = dStatGuru[statMode] || [];
+  $('stat-loading').style.display = 'none';
+  if(!data.length){
+    $('stat-empty').style.display = 'block';
+    $('stat-tbl').style.display = 'none';
+    return;
+  }
+  $('stat-empty').style.display = 'none';
+  $('stat-tbl').style.display = 'table';
+  const namaSaya = guruLogin?.nama || '';
+  $('stat-tbody').innerHTML = data.map((row, i) => {
+    const aktif = row.guru === namaSaya;
+    const bg = aktif ? 'background:var(--hijau-muda,#dcfce7);' : '';
+    const fw = aktif ? 'font-weight:800;' : '';
+    return `<tr style="border-top:1px solid var(--border);${bg}">
+      <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--teks2);">${i+1}</td>
+      <td style="padding:10px 8px;font-size:13px;color:var(--teks1);${fw}">${row.guru}${aktif?' (Saya)':''}</td>
+      <td style="padding:10px 8px;text-align:center;font-size:14px;color:var(--teks1);${fw}">${row.jumlah}</td>
+    </tr>`;
+  }).join('');
+}
+
 const _origGoto=goto;
 goto=function(pg){
   _origGoto(pg);
@@ -13261,6 +13344,10 @@ goto=function(pg){
     if(guruLogin?.nama) $('tt-pelapor-nama').textContent=guruLogin.nama;
     ttLoadData();
     rhsInitKelas();
+  }
+  if(pg==='stat'){
+    statSetMode('pelanggaran');
+    statLoadData();
   }
 };
 </script>
