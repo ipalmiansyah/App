@@ -13298,21 +13298,46 @@ function rmkCetak(){
 let dStatGuru = { pelanggaran: [], pembinaan: [] };
 let statLoaded = false;
 let statMode = 'pelanggaran';
+const STAT_NAMES_CACHE_KEY = 'stat_guru_nama_cache';
 
 async function statLoadData(){
-  $('stat-loading').style.display = 'block';
-  $('stat-empty').style.display = 'none';
-  $('stat-tbl').style.display = 'none';
+  // Tampilkan daftar NAMA dari cache dulu (jarang berubah) dengan angka "..." (belum final)
+  let adaCacheNama = false;
+  try{
+    const cached = localStorage.getItem(STAT_NAMES_CACHE_KEY);
+    if(cached){
+      const names = JSON.parse(cached);
+      if(Array.isArray(names) && names.length){
+        dStatGuru.pelanggaran = names.map(n => ({ guru: n, jumlah: null }));
+        dStatGuru.pembinaan   = names.map(n => ({ guru: n, jumlah: null }));
+        adaCacheNama = true;
+        statRender();
+      }
+    }
+  }catch(e){}
+
+  if(!adaCacheNama){
+    $('stat-loading').style.display = 'block';
+    $('stat-empty').style.display = 'none';
+    $('stat-tbl').style.display = 'none';
+  }
+
+  // Angka selalu diambil ulang dari server tiap buka tab (tidak di-cache)
   try{
     const r = await fetch(CFG.APPS_SCRIPT_URL + '?action=getStatGuru');
     const d = await r.json();
     dStatGuru.pelanggaran = d.pelanggaran || [];
     dStatGuru.pembinaan = d.pembinaan || [];
     statLoaded = true;
+    try{
+      const namaUnik = [...new Set(dStatGuru.pelanggaran.map(r=>r.guru))].sort((a,b)=>a.localeCompare(b,'id'));
+      localStorage.setItem(STAT_NAMES_CACHE_KEY, JSON.stringify(namaUnik));
+    }catch(e){}
     statRender();
   }catch(e){
     console.error('[Stat] Gagal load data:', e);
-    $('stat-loading').textContent = 'Gagal memuat data. Periksa koneksi.';
+    if(!adaCacheNama) $('stat-loading').textContent = 'Gagal memuat data. Periksa koneksi.';
+    // Kalau ada cache, biarkan data lama tetap tampil walau fetch gagal (misal lagi offline)
   }
 }
 
@@ -13346,9 +13371,14 @@ function statRender(){
     const bg = aktif ? 'background:var(--hijau-muda,#dcfce7);' : '';
     const fw = aktif ? 'font-weight:800;' : '';
     const namaEsc = row.guru.replace(/'/g,"\\'");
-    const jumlahCell = row.jumlah > 0
-      ? `<td style="padding:10px 8px;text-align:center;font-size:14px;color:var(--g4,#166534);${fw}cursor:pointer;text-decoration:underline;text-underline-offset:2px;" onclick="statOpenDetail('${namaEsc}')">${row.jumlah}</td>`
-      : `<td style="padding:10px 8px;text-align:center;font-size:14px;color:var(--teks3);${fw}">${row.jumlah}</td>`;
+    let jumlahCell;
+    if(row.jumlah === null || row.jumlah === undefined){
+      jumlahCell = `<td style="padding:10px 8px;text-align:center;font-size:14px;color:var(--teks3);${fw}">…</td>`;
+    } else if(row.jumlah > 0){
+      jumlahCell = `<td style="padding:10px 8px;text-align:center;font-size:14px;color:var(--g4,#166534);${fw}cursor:pointer;text-decoration:underline;text-underline-offset:2px;" onclick="statOpenDetail('${namaEsc}')">${row.jumlah}</td>`;
+    } else {
+      jumlahCell = `<td style="padding:10px 8px;text-align:center;font-size:14px;color:var(--teks3);${fw}">${row.jumlah}</td>`;
+    }
     return `<tr style="border-top:1px solid var(--border);${bg}">
       <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--teks2);">${i+1}</td>
       <td style="padding:10px 8px;font-size:13px;color:var(--teks1);${fw}">${row.guru}${aktif?' (Saya)':''}</td>
@@ -13421,8 +13451,9 @@ goto=function(pg){
     rhsInitKelas();
   }
   if(pg==='stat'){
-    statSetMode('pelanggaran');
+    statMode = 'pelanggaran';
     statLoadData();
+    statSetMode('pelanggaran');
   }
 };
 </script>
