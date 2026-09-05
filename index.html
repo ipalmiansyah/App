@@ -10473,6 +10473,13 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
         <div id="tt-form-wali" style="display:none;">
           <div class="form-card" style="margin-bottom:10px;">
             <div class="form-row">
+              <label>Tampilkan Data s.d Tanggal</label>
+              <input type="date" id="wali-tanggal" onchange="waliInit()">
+            </div>
+          </div>
+          <div id="wali-periode-aktif" style="padding:0 16px 10px;font-size:13px;color:var(--teks2);"></div>
+          <div class="form-card" style="margin-bottom:10px;">
+            <div class="form-row">
               <label>Periode</label>
               <select id="wali-periode" onchange="waliRenderStatus()"></select>
             </div>
@@ -10484,6 +10491,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
             <table id="wali-tbl" style="display:none;width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
               <thead>
                 <tr style="background:var(--bg);">
+                  <th style="padding:8px;text-align:center;font-size:12px;color:var(--teks3);width:32px;">No</th>
                   <th style="padding:8px;text-align:left;font-size:12px;color:var(--teks3);">Nama</th>
                   <th style="padding:8px;text-align:center;font-size:12px;color:var(--teks3);width:60px;">Kelas</th>
                   <th style="padding:8px;text-align:center;font-size:12px;color:var(--teks3);width:60px;">Poin</th>
@@ -10491,6 +10499,17 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
               </thead>
               <tbody id="wali-tbody"></tbody>
             </table>
+          </div>
+
+          <!-- POPUP DETAIL SISWA (Pertemuan Wali) -->
+          <div id="wali-detail-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;" onclick="if(event.target===this) waliCloseDetail()">
+            <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92%,480px);max-height:80vh;background:var(--card);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+              <div style="position:sticky;top:0;background:var(--card);z-index:2;padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                <div id="wali-detail-title" style="font-weight:800;font-size:15px;color:var(--teks1);">Detail</div>
+                <button onclick="waliCloseDetail()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--teks3);padding:2px 6px;line-height:1;">✕</button>
+              </div>
+              <div id="wali-detail-body" style="overflow-y:auto;flex:1;"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -13358,28 +13377,51 @@ async function waliInit(){
     const daftar = waliBuildPeriodeList();
     sel.innerHTML = daftar.map(p=>`<option value="${p.value}">${p.label}</option>`).join('');
   }
+  const tglInput = $('wali-tanggal');
+  if(tglInput && !tglInput.value) tglInput.value = tglISOHariIni();
+
   $('wali-loading').style.display='block';
   $('wali-loading').textContent='Memuat data...';
   $('wali-empty').style.display='none';
   $('wali-tbl').style.display='none';
   $('wali-status-area').innerHTML='';
+  $('wali-periode-aktif').innerHTML='';
 
   const namaGuru = guruLogin?.nama||'';
+  const tglBatas = tglInput ? tglInput.value : '';
   try{
     const [rSiswa, rStatus] = await Promise.all([
-      fetch(CFG.APPS_SCRIPT_URL+'?action=getRekapWaliBimbingan&guru='+encodeURIComponent(namaGuru)),
+      fetch(CFG.APPS_SCRIPT_URL+'?action=getRekapWaliBimbingan&guru='+encodeURIComponent(namaGuru)+'&tanggal='+encodeURIComponent(tglBatas)),
       fetch(CFG.APPS_SCRIPT_URL+'?action=getPertemuanWaliStatus&guru='+encodeURIComponent(namaGuru))
     ]);
     const dSiswaW = await rSiswa.json();
     const dStatusW = await rStatus.json();
     waliSiswaData = dSiswaW.data || [];
     waliStatusData = dStatusW.data || [];
+    waliRenderHeaderAktif();
     waliRenderList();
     waliRenderStatus();
   }catch(e){
     console.error('[Wali] Gagal load:', e);
     $('wali-loading').textContent='Gagal memuat data. Periksa koneksi.';
   }
+}
+
+// Info ringkas periode bulan berjalan (selalu bulan sekarang, terpisah dari dropdown pilihan)
+function waliPeriodeAktif(){
+  const now = new Date(Date.now()+7*60*60*1000);
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth();
+  return { value: y+'-'+String(m+1).padStart(2,'0'), label: STAT_NAMA_BULAN[m]+' '+y };
+}
+
+function waliRenderHeaderAktif(){
+  const aktif = waliPeriodeAktif();
+  const cocok = waliStatusData.find(x=>x.periode===aktif.value);
+  const statusHtml = cocok
+    ? `<span style="color:#166534;font-weight:700;">✅ Sudah Pertemuan</span>`
+    : `<span style="color:#b45309;font-weight:700;">⏳ Belum Pertemuan</span>`;
+  $('wali-periode-aktif').innerHTML = `📅 Periode berjalan: <b>${aktif.label}</b> — ${statusHtml}`;
 }
 
 function waliRenderList(){
@@ -13391,21 +13433,73 @@ function waliRenderList(){
   }
   $('wali-empty').style.display='none';
   $('wali-tbl').style.display='table';
-  $('wali-tbody').innerHTML = waliSiswaData.map(s=>{
+  $('wali-tbody').innerHTML = waliSiswaData.map((s,i)=>{
     const namaEsc = s.namaSiswa.replace(/'/g,"\\'");
     const kelasEsc = s.kelas.replace(/'/g,"\\'");
     const poinColor = s.totalPoin>0 ? 'var(--merah)' : 'var(--teks3)';
     return `<tr style="border-top:1px solid var(--border);">
+      <td style="padding:8px;text-align:center;font-size:12px;color:var(--teks3);">${i+1}</td>
       <td style="padding:8px;font-size:13px;color:var(--teks1);">${s.namaSiswa}</td>
       <td style="padding:8px;text-align:center;font-size:12px;color:var(--teks2);">${s.kelas}</td>
-      <td style="padding:8px;text-align:center;font-size:14px;font-weight:700;color:${poinColor};cursor:pointer;" onclick="waliLihatSiswa('${namaEsc}','${kelasEsc}')">${s.totalPoin}</td>
+      <td style="padding:8px;text-align:center;font-size:14px;font-weight:700;color:${poinColor};cursor:pointer;" onclick="waliOpenDetail('${namaEsc}','${kelasEsc}')">${s.totalPoin}</td>
     </tr>`;
   }).join('');
 }
 
-function waliLihatSiswa(nama, kelas){
-  ttGoto('individu');
-  ttPilihSiswa(nama, kelas);
+// Popup detail riwayat pelanggaran siswa (tanpa pindah tab)
+async function waliOpenDetail(nama, kelas){
+  $('wali-detail-title').textContent = nama + ' (' + kelas + ')';
+  $('wali-detail-body').innerHTML = '<div style="padding:24px;text-align:center;color:var(--teks3);font-size:13px;">Memuat...</div>';
+  $('wali-detail-overlay').style.display = 'block';
+  const tglBatas = $('wali-tanggal') ? $('wali-tanggal').value : '';
+  const parseTgl = str => {
+    if(!str) return null;
+    const s = String(str).trim();
+    if(s.includes('/')){
+      const p=s.split(' ')[0].split('/');
+      if(p.length===3) return new Date(p[2],p[1]-1,p[0]);
+    }
+    if(s.includes('-')){
+      const p=s.split('-');
+      if(p.length===3) return new Date(p[0],p[1]-1,p[2]);
+    }
+    return new Date(s);
+  };
+  const batasDate = tglBatas ? parseTgl(tglBatas) : null;
+  try{
+    const r = await fetch(CFG.APPS_SCRIPT_URL+`?action=getRekapIndividu&nama=${encodeURIComponent(nama)}&kelas=${encodeURIComponent(kelas)}`);
+    const d = await r.json();
+    let data = d.data || [];
+    if(batasDate){
+      data = data.filter(p => {
+        const t = parseTgl(p.tanggal);
+        return !t || t.getTime() <= batasDate.getTime();
+      });
+    }
+    const total = data.reduce((s,x)=>s+(parseInt(x.poin)||0),0);
+    if(!data.length){
+      $('wali-detail-body').innerHTML = `<div style="padding:12px 16px;font-weight:800;font-size:15px;color:var(--teks1);border-bottom:1px solid var(--border);">Total Poin: 0</div><div style="text-align:center;padding:16px;color:var(--teks3);font-size:13px;">Belum ada pelanggaran</div>`;
+      return;
+    }
+    let html = `<div style="padding:12px 16px;font-weight:800;font-size:15px;color:var(--merah);border-bottom:1px solid var(--border);">Total Poin: ${total}</div>`;
+    [...data].sort((a,b)=>parseTgl(a.tanggal)-parseTgl(b.tanggal)).forEach((p,i)=>{
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;">
+        <div style="flex:0 0 20px;font-size:12px;color:var(--teks3);padding-top:1px;">${i+1}.</div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:13px;color:var(--teks1);">${p.pelanggaran}</div>
+          <div style="font-size:12px;color:var(--teks2);margin-top:2px;">${p.pelapor} · ${p.statusPelapor} · ${fmtTgl(p.tanggal)}</div>
+        </div>
+        <div style="font-weight:700;font-size:14px;color:var(--merah);">${p.poin}</div>
+      </div>`;
+    });
+    $('wali-detail-body').innerHTML = html;
+  }catch(e){
+    $('wali-detail-body').innerHTML = '<div style="padding:24px;text-align:center;color:var(--teks3);font-size:13px;">Gagal memuat data.</div>';
+  }
+}
+
+function waliCloseDetail(){
+  $('wali-detail-overlay').style.display = 'none';
 }
 
 function waliRenderStatus(){
@@ -13436,6 +13530,7 @@ async function waliSubmit(){
       toast('✅ Pertemuan wali berhasil ditandai');
       waliStatusData.push({periode, tanggalDitandai: tglStr()});
       waliRenderStatus();
+      waliRenderHeaderAktif();
     } else {
       toast('Gagal: '+(d.error||'Error'), 'warn');
       if(btn){ btn.disabled=false; btn.textContent='Tandai Sudah Pertemuan Wali'; }
