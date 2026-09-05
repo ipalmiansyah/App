@@ -10384,9 +10384,9 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
       <div class="tt-sub aktif" id="tt-input">
         <!-- Submenu Pelanggaran / Pembinaan / Pertemuan Wali -->
         <div style="display:flex;gap:6px;margin-bottom:12px;">
-          <button id="tt-mode-pel" onclick="ttSetMode('pelanggaran')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid var(--merah);background:var(--merah);color:#fff;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">✏️ Pelanggaran</button>
-          <button id="tt-mode-bin" onclick="ttSetMode('pembinaan')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">🤝 Pembinaan</button>
-          <button id="tt-mode-wali" onclick="ttSetMode('wali')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">📅 Pertemuan Wali</button>
+          <button id="tt-mode-pel" onclick="ttSetMode('pelanggaran')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--merah);background:var(--merah);color:#fff;font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">✏️ Pelanggaran</button>
+          <button id="tt-mode-bin" onclick="ttSetMode('pembinaan')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">🤝 Pembinaan</button>
+          <button id="tt-mode-wali" onclick="ttSetMode('wali')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">📅 Wali</button>
         </div>
         <div class="form-card" id="tt-form-card-utama">
           <div class="form-row">
@@ -10592,9 +10592,10 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     <!-- ── STATISTIK PARTISIPASI GURU ── -->
     <div class="page" id="pg-stat">
       <div class="pg-hdr"><h2>📊 Statistik Partisipasi Guru</h2></div>
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button id="stat-mode-pel" onclick="statSetMode('pelanggaran')" style="flex:1;padding:9px;border-radius:10px;border:2px solid var(--merah);background:var(--merah);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">✏️ Pelanggaran</button>
-        <button id="stat-mode-bin" onclick="statSetMode('pembinaan')" style="flex:1;padding:9px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">🤝 Pembinaan</button>
+      <div style="display:flex;gap:6px;margin-bottom:12px;">
+        <button id="stat-mode-pel" onclick="statSetMode('pelanggaran')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--merah);background:var(--merah);color:#fff;font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">✏️ Pelanggaran</button>
+        <button id="stat-mode-bin" onclick="statSetMode('pembinaan')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">🤝 Pembinaan</button>
+        <button id="stat-mode-wali" onclick="statSetMode('bimbingan')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">📅 Bimbingan</button>
       </div>
       <div id="stat-loading" style="text-align:center;padding:30px;color:var(--teks3);font-size:13px;">Memuat data...</div>
       <div id="stat-empty" style="display:none;text-align:center;padding:30px;color:var(--teks3);font-size:13px;">Belum ada data.</div>
@@ -10618,7 +10619,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
             <div id="stat-modal-title" style="font-weight:800;font-size:15px;color:var(--teks1);">Detail</div>
             <button onclick="statCloseDetail()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--teks3);padding:2px 6px;line-height:1;">✕</button>
           </div>
-          <div style="padding:10px 16px;border-bottom:1px solid var(--border);position:relative;">
+          <div id="stat-modal-search-row" style="padding:10px 16px;border-bottom:1px solid var(--border);position:relative;">
             <input type="text" id="stat-modal-search" placeholder="Cari nama siswa..." autocomplete="off" oninput="statFilterDetail(this.value)" style="width:100%;padding:10px 40px 10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:13px;color:var(--teks1);background:var(--bg);box-sizing:border-box;">
             <button id="stat-modal-search-clear" onclick="statClearSearchDetail()" style="display:none;position:absolute;right:26px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--teks3);padding:0;line-height:1;">✕</button>
           </div>
@@ -13592,13 +13593,18 @@ function statSetMode(mode){
   statMode = mode;
   statCloseDetail();
   const isPel = mode === 'pelanggaran';
+  const isBin = mode === 'pembinaan';
+  const isWali = mode === 'bimbingan';
   $('stat-mode-pel').style.background = isPel ? 'var(--merah)' : 'white';
   $('stat-mode-pel').style.color = isPel ? '#fff' : 'var(--teks2)';
   $('stat-mode-pel').style.borderColor = isPel ? 'var(--merah)' : 'var(--border)';
-  $('stat-mode-bin').style.background = isPel ? 'white' : '#166534';
-  $('stat-mode-bin').style.color = isPel ? 'var(--teks2)' : '#fff';
-  $('stat-mode-bin').style.borderColor = isPel ? 'var(--border)' : '#166534';
-  $('stat-th-jumlah').textContent = isPel ? 'Jumlah Laporan' : 'Jumlah Binaan';
+  $('stat-mode-bin').style.background = isBin ? '#166534' : 'white';
+  $('stat-mode-bin').style.color = isBin ? '#fff' : 'var(--teks2)';
+  $('stat-mode-bin').style.borderColor = isBin ? '#166534' : 'var(--border)';
+  $('stat-mode-wali').style.background = isWali ? '#1e3a8a' : 'white';
+  $('stat-mode-wali').style.color = isWali ? '#fff' : 'var(--teks2)';
+  $('stat-mode-wali').style.borderColor = isWali ? '#1e3a8a' : 'var(--border)';
+  $('stat-th-jumlah').textContent = isPel ? 'Jumlah Laporan' : (isBin ? 'Jumlah Binaan' : 'Jumlah Pertemuan');
   statRender();
 }
 
@@ -13643,9 +13649,12 @@ function statOpenDetail(guru){
   $('stat-modal-title').textContent = guru;
   $('stat-modal-search').value = '';
   $('stat-modal-search-clear').style.display = 'none';
+  $('stat-modal-search-row').style.display = statDetailMode === 'bimbingan' ? 'none' : '';
   $('stat-modal-body').innerHTML = '<div style="padding:24px;text-align:center;color:var(--teks3);font-size:13px;">Memuat...</div>';
   $('stat-modal-overlay').style.display = 'block';
-  const action = statDetailMode === 'pelanggaran' ? 'getPelanggaranByGuru' : 'getPembinaanByGuru';
+  const action = statDetailMode === 'pelanggaran' ? 'getPelanggaranByGuru'
+    : statDetailMode === 'pembinaan' ? 'getPembinaanByGuru'
+    : 'getPertemuanWaliByGuru';
   fetch(CFG.APPS_SCRIPT_URL + '?action=' + action + '&guru=' + encodeURIComponent(guru))
     .then(r => r.json())
     .then(d => {
@@ -13685,6 +13694,15 @@ function statRenderDetail(list){
     $('stat-modal-body').innerHTML = '<div style="padding:24px;text-align:center;color:var(--teks3);font-size:13px;">Tidak ada data.</div>';
     return;
   }
+
+  if(statDetailMode === 'bimbingan'){
+    $('stat-modal-body').innerHTML = list.map((d,i)=>`<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <div style="font-weight:700;font-size:13px;color:var(--teks1);">${i+1}. ${statBulanLabel(d.periode)}</div>
+      <div style="font-size:12px;color:var(--teks3);">✅ Ditandai ${d.tanggalDitandai}</div>
+    </div>`).join('');
+    return;
+  }
+
   let html = '';
   let bulanTerakhir = null;
   list.forEach((d, i) => {
