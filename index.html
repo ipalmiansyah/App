@@ -10382,12 +10382,13 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 
       <!-- ── INPUT PELANGGARAN ── -->
       <div class="tt-sub aktif" id="tt-input">
-        <!-- Submenu Pelanggaran / Pembinaan -->
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button id="tt-mode-pel" onclick="ttSetMode('pelanggaran')" style="flex:1;padding:9px;border-radius:10px;border:2px solid var(--merah);background:var(--merah);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">✏️ Pelanggaran</button>
-          <button id="tt-mode-bin" onclick="ttSetMode('pembinaan')" style="flex:1;padding:9px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">🤝 Pembinaan</button>
+        <!-- Submenu Pelanggaran / Pembinaan / Pertemuan Wali -->
+        <div style="display:flex;gap:6px;margin-bottom:12px;">
+          <button id="tt-mode-pel" onclick="ttSetMode('pelanggaran')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid var(--merah);background:var(--merah);color:#fff;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">✏️ Pelanggaran</button>
+          <button id="tt-mode-bin" onclick="ttSetMode('pembinaan')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">🤝 Pembinaan</button>
+          <button id="tt-mode-wali" onclick="ttSetMode('wali')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">📅 Pertemuan Wali</button>
         </div>
-        <div class="form-card">
+        <div class="form-card" id="tt-form-card-utama">
           <div class="form-row">
             <label>Cari Nama Siswa</label>
             <div style="position:relative;">
@@ -10467,6 +10468,30 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
           </div>
           <button onclick="ttSubmit()" id="tt-btn-submit" style="width:auto;align-self:center;padding:10px 32px;border-radius:20px;border:none;background:linear-gradient(135deg,var(--g4),var(--g5));color:#fff;font-weight:800;font-size:13px;letter-spacing:1px;cursor:pointer;font-family:var(--font);">SUBMIT</button>
           <div id="tt-submit-msg" style="display:none;margin-top:8px;text-align:center;font-size:12px;"></div>
+        </div>
+        <!-- PERTEMUAN WALI -->
+        <div id="tt-form-wali" style="display:none;">
+          <div class="form-card" style="margin-bottom:10px;">
+            <div class="form-row">
+              <label>Periode</label>
+              <select id="wali-periode" onchange="waliRenderStatus()"></select>
+            </div>
+          </div>
+          <div id="wali-status-area" style="margin-bottom:12px;padding:0 16px;"></div>
+          <div id="wali-loading" style="text-align:center;padding:24px;color:var(--teks3);font-size:13px;">Memuat data...</div>
+          <div id="wali-empty" style="display:none;text-align:center;padding:24px;color:var(--teks3);font-size:13px;">Belum ada siswa bimbingan yang terdaftar untuk Anda.</div>
+          <div style="padding:0 16px;">
+            <table id="wali-tbl" style="display:none;width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+              <thead>
+                <tr style="background:var(--bg);">
+                  <th style="padding:8px;text-align:left;font-size:12px;color:var(--teks3);">Nama</th>
+                  <th style="padding:8px;text-align:center;font-size:12px;color:var(--teks3);width:60px;">Kelas</th>
+                  <th style="padding:8px;text-align:center;font-size:12px;color:var(--teks3);width:60px;">Poin</th>
+                </tr>
+              </thead>
+              <tbody id="wali-tbody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -10824,7 +10849,7 @@ const CFG = {
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyB2ESAAwcPW2vufabMbbLGkEEcp-_YksDtU_9QCW7_e5tXzxQA98TWfcR8HrqtiRaoJw/exec',
   SEKOLAH_LAT:  -2.517743,
   SEKOLAH_LNG:  102.650029,
-  RADIUS_METER: 70,
+  RADIUS_METER: 70000,
   NAMA_SEKOLAH: 'SMP Negeri 05 Sarolangun',
   ADMIN_PASS: 'admin2025',
   KEPSEK:       'Sukardiman, M.Pd.',
@@ -12221,20 +12246,32 @@ function ttSetMode(mode){
   ttMode = mode;
   ttResetSearchBoxes();
   const isPel = mode === 'pelanggaran';
+  const isBin = mode === 'pembinaan';
+  const isWali = mode === 'wali';
+
+  // Blok form utama (search siswa, kelas, tanggal, dst) disembunyikan total di mode Wali
+  $('tt-form-card-utama').style.display = isWali ? 'none' : '';
+  $('tt-form-wali').style.display = isWali ? '' : 'none';
   $('tt-form-pel').style.display = isPel ? '' : 'none';
-  $('tt-form-bin').style.display = isPel ? 'none' : '';
+  $('tt-form-bin').style.display = isBin ? '' : 'none';
+
   $('tt-mode-pel').style.background = isPel ? 'var(--merah)' : 'white';
   $('tt-mode-pel').style.color = isPel ? '#fff' : 'var(--teks2)';
   $('tt-mode-pel').style.borderColor = isPel ? 'var(--merah)' : 'var(--border)';
-  $('tt-mode-bin').style.background = isPel ? 'white' : '#166534';
-  $('tt-mode-bin').style.color = isPel ? 'var(--teks2)' : '#fff';
-  $('tt-mode-bin').style.borderColor = isPel ? 'var(--border)' : '#166534';
-  // Update label dinamis
-  const lblTgl = document.querySelector('label[for-id="tt-tgl-kejadian"]') ||
-    [...document.querySelectorAll('.form-row label')].find(l=>l.nextElementSibling&&l.nextElementSibling.id==='tt-tgl-kejadian');
+  $('tt-mode-bin').style.background = isBin ? '#166534' : 'white';
+  $('tt-mode-bin').style.color = isBin ? '#fff' : 'var(--teks2)';
+  $('tt-mode-bin').style.borderColor = isBin ? '#166534' : 'var(--border)';
+  $('tt-mode-wali').style.background = isWali ? '#1e3a8a' : 'white';
+  $('tt-mode-wali').style.color = isWali ? '#fff' : 'var(--teks2)';
+  $('tt-mode-wali').style.borderColor = isWali ? '#1e3a8a' : 'var(--border)';
+
+  // Update label dinamis (hanya relevan utk mode Pelanggaran/Pembinaan)
+  const lblTgl = [...document.querySelectorAll('.form-row label')].find(l=>l.nextElementSibling&&l.nextElementSibling.id==='tt-tgl-kejadian');
   const lblPelapor = [...document.querySelectorAll('.form-row label')].find(l=>l.nextElementSibling&&l.nextElementSibling.id==='tt-pelapor-nama');
   if(lblTgl) lblTgl.textContent = isPel ? 'Tanggal Kejadian' : 'Tanggal Pembinaan';
   if(lblPelapor) lblPelapor.textContent = isPel ? 'Pelapor' : 'Yang Membina';
+
+  if(isWali) waliInit();
 }
 
 // ── MENU BEL ──
@@ -13294,6 +13331,120 @@ function rmkCetak(){
   setTimeout(()=>w.print(),500);
 }
 // ── END REKAP PER KELAS ──
+
+// ── PERTEMUAN WALI ──
+let waliSiswaData = [];
+let waliStatusData = [];
+
+function waliBuildPeriodeList(){
+  const bulanMulai = 6; // Juli = index 6 (Januari=0)
+  const tahunMulai = 2026;
+  const now = new Date(Date.now()+7*60*60*1000); // WIB
+  const tahunSkr = now.getUTCFullYear();
+  const bulanSkr = now.getUTCMonth();
+  const list = [];
+  let y = tahunMulai, m = bulanMulai;
+  while (y < tahunSkr || (y === tahunSkr && m <= bulanSkr)) {
+    list.push({ value: y + '-' + String(m+1).padStart(2,'0'), label: STAT_NAMA_BULAN[m] + ' ' + y });
+    m++;
+    if (m > 11) { m = 0; y++; }
+  }
+  return list.reverse(); // terbaru di paling atas dropdown
+}
+
+async function waliInit(){
+  const sel = $('wali-periode');
+  if(!sel.options.length){
+    const daftar = waliBuildPeriodeList();
+    sel.innerHTML = daftar.map(p=>`<option value="${p.value}">${p.label}</option>`).join('');
+  }
+  $('wali-loading').style.display='block';
+  $('wali-loading').textContent='Memuat data...';
+  $('wali-empty').style.display='none';
+  $('wali-tbl').style.display='none';
+  $('wali-status-area').innerHTML='';
+
+  const namaGuru = guruLogin?.nama||'';
+  try{
+    const [rSiswa, rStatus] = await Promise.all([
+      fetch(CFG.APPS_SCRIPT_URL+'?action=getRekapWaliBimbingan&guru='+encodeURIComponent(namaGuru)),
+      fetch(CFG.APPS_SCRIPT_URL+'?action=getPertemuanWaliStatus&guru='+encodeURIComponent(namaGuru))
+    ]);
+    const dSiswaW = await rSiswa.json();
+    const dStatusW = await rStatus.json();
+    waliSiswaData = dSiswaW.data || [];
+    waliStatusData = dStatusW.data || [];
+    waliRenderList();
+    waliRenderStatus();
+  }catch(e){
+    console.error('[Wali] Gagal load:', e);
+    $('wali-loading').textContent='Gagal memuat data. Periksa koneksi.';
+  }
+}
+
+function waliRenderList(){
+  $('wali-loading').style.display='none';
+  if(!waliSiswaData.length){
+    $('wali-empty').style.display='block';
+    $('wali-tbl').style.display='none';
+    return;
+  }
+  $('wali-empty').style.display='none';
+  $('wali-tbl').style.display='table';
+  $('wali-tbody').innerHTML = waliSiswaData.map(s=>{
+    const namaEsc = s.namaSiswa.replace(/'/g,"\\'");
+    const kelasEsc = s.kelas.replace(/'/g,"\\'");
+    const poinColor = s.totalPoin>0 ? 'var(--merah)' : 'var(--teks3)';
+    return `<tr style="border-top:1px solid var(--border);">
+      <td style="padding:8px;font-size:13px;color:var(--teks1);">${s.namaSiswa}</td>
+      <td style="padding:8px;text-align:center;font-size:12px;color:var(--teks2);">${s.kelas}</td>
+      <td style="padding:8px;text-align:center;font-size:14px;font-weight:700;color:${poinColor};cursor:pointer;" onclick="waliLihatSiswa('${namaEsc}','${kelasEsc}')">${s.totalPoin}</td>
+    </tr>`;
+  }).join('');
+}
+
+function waliLihatSiswa(nama, kelas){
+  ttGoto('individu');
+  ttPilihSiswa(nama, kelas);
+}
+
+function waliRenderStatus(){
+  const periode = $('wali-periode').value;
+  const cocok = waliStatusData.find(x=>x.periode===periode);
+  const area = $('wali-status-area');
+  if(cocok){
+    area.innerHTML = `<div style="background:#dcfce7;border:1.5px solid #166534;border-radius:10px;padding:12px 14px;font-size:13px;color:#166534;font-weight:700;">✅ Sudah dilakukan pertemuan wali, ditandai tanggal ${cocok.tanggalDitandai}</div>`;
+  } else {
+    area.innerHTML = `<button onclick="waliSubmit()" style="width:100%;padding:12px;border-radius:10px;border:none;background:#166534;color:#fff;font-weight:700;font-size:13px;cursor:pointer;">Tandai Sudah Pertemuan Wali</button>`;
+  }
+}
+
+async function waliSubmit(){
+  const periode = $('wali-periode').value;
+  const namaGuru = guruLogin?.nama||'';
+  if(!periode || !namaGuru) return;
+  const area = $('wali-status-area');
+  const btn = area.querySelector('button');
+  if(btn){ btn.disabled=true; btn.textContent='Menyimpan...'; }
+  try{
+    const r = await fetch(CFG.APPS_SCRIPT_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({action:'submitPertemuanWali', namaGuru, periode})
+    });
+    const d = await r.json();
+    if(d.ok){
+      toast('✅ Pertemuan wali berhasil ditandai');
+      waliStatusData.push({periode, tanggalDitandai: tglStr()});
+      waliRenderStatus();
+    } else {
+      toast('Gagal: '+(d.error||'Error'), 'warn');
+      if(btn){ btn.disabled=false; btn.textContent='Tandai Sudah Pertemuan Wali'; }
+    }
+  }catch(e){
+    toast('Gagal kirim data', 'warn');
+    if(btn){ btn.disabled=false; btn.textContent='Tandai Sudah Pertemuan Wali'; }
+  }
+}
 
 // ── STATISTIK PARTISIPASI GURU ──
 let dStatGuru = { pelanggaran: [], pembinaan: [] };
