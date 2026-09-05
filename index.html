@@ -10386,7 +10386,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
         <div style="display:flex;gap:6px;margin-bottom:12px;">
           <button id="tt-mode-pel" onclick="ttSetMode('pelanggaran')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--merah);background:var(--merah);color:#fff;font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">✏️ Pelanggaran</button>
           <button id="tt-mode-bin" onclick="ttSetMode('pembinaan')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">🤝 Pembinaan</button>
-          <button id="tt-mode-wali" onclick="ttSetMode('wali')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">📅 Wali</button>
+          <button id="tt-mode-wali" onclick="ttSetMode('wali')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;">📅 Pertemuan Wali</button>
         </div>
         <div class="form-card" id="tt-form-card-utama">
           <div class="form-row">
@@ -10477,7 +10477,6 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
               <input type="date" id="wali-tanggal" onchange="waliInit()">
             </div>
           </div>
-          <div id="wali-periode-aktif" style="padding:0 16px 10px;font-size:13px;color:var(--teks2);"></div>
           <div class="form-card" style="margin-bottom:10px;">
             <div class="form-row">
               <label>Periode</label>
@@ -10595,7 +10594,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
       <div style="display:flex;gap:6px;margin-bottom:12px;">
         <button id="stat-mode-pel" onclick="statSetMode('pelanggaran')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--merah);background:var(--merah);color:#fff;font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">✏️ Pelanggaran</button>
         <button id="stat-mode-bin" onclick="statSetMode('pembinaan')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">🤝 Pembinaan</button>
-        <button id="stat-mode-wali" onclick="statSetMode('bimbingan')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">📅 Bimbingan</button>
+        <button id="stat-mode-wali" onclick="statSetMode('bimbingan')" style="flex:1;padding:9px 2px;border-radius:10px;border:2px solid var(--border);background:white;color:var(--teks2);font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;">📅 Pertemuan Wali</button>
       </div>
       <div id="stat-loading" style="text-align:center;padding:30px;color:var(--teks3);font-size:13px;">Memuat data...</div>
       <div id="stat-empty" style="display:none;text-align:center;padding:30px;color:var(--teks3);font-size:13px;">Belum ada data.</div>
@@ -13386,7 +13385,6 @@ async function waliInit(){
   $('wali-empty').style.display='none';
   $('wali-tbl').style.display='none';
   $('wali-status-area').innerHTML='';
-  $('wali-periode-aktif').innerHTML='';
 
   const namaGuru = guruLogin?.nama||'';
   const tglBatas = tglInput ? tglInput.value : '';
@@ -13399,30 +13397,12 @@ async function waliInit(){
     const dStatusW = await rStatus.json();
     waliSiswaData = dSiswaW.data || [];
     waliStatusData = dStatusW.data || [];
-    waliRenderHeaderAktif();
     waliRenderList();
     waliRenderStatus();
   }catch(e){
     console.error('[Wali] Gagal load:', e);
     $('wali-loading').textContent='Gagal memuat data. Periksa koneksi.';
   }
-}
-
-// Info ringkas periode bulan berjalan (selalu bulan sekarang, terpisah dari dropdown pilihan)
-function waliPeriodeAktif(){
-  const now = new Date(Date.now()+7*60*60*1000);
-  const y = now.getUTCFullYear();
-  const m = now.getUTCMonth();
-  return { value: y+'-'+String(m+1).padStart(2,'0'), label: STAT_NAMA_BULAN[m]+' '+y };
-}
-
-function waliRenderHeaderAktif(){
-  const aktif = waliPeriodeAktif();
-  const cocok = waliStatusData.find(x=>x.periode===aktif.value);
-  const statusHtml = cocok
-    ? `<span style="color:#166534;font-weight:700;">✅ Sudah Pertemuan</span>`
-    : `<span style="color:#b45309;font-weight:700;">⏳ Belum Pertemuan</span>`;
-  $('wali-periode-aktif').innerHTML = `📅 Periode berjalan: <b>${aktif.label}</b> — ${statusHtml}`;
 }
 
 function waliRenderList(){
@@ -13531,7 +13511,6 @@ async function waliSubmit(){
       toast('✅ Pertemuan wali berhasil ditandai');
       waliStatusData.push({periode, tanggalDitandai: tglStr()});
       waliRenderStatus();
-      waliRenderHeaderAktif();
     } else {
       toast('Gagal: '+(d.error||'Error'), 'warn');
       if(btn){ btn.disabled=false; btn.textContent='Tandai Sudah Pertemuan Wali'; }
@@ -13543,7 +13522,7 @@ async function waliSubmit(){
 }
 
 // ── STATISTIK PARTISIPASI GURU ──
-let dStatGuru = { pelanggaran: [], pembinaan: [] };
+let dStatGuru = { pelanggaran: [], pembinaan: [], bimbingan: [] };
 let statLoaded = false;
 let statMode = 'pelanggaran';
 const STAT_NAMES_CACHE_KEY = 'stat_guru_nama_cache';
@@ -13558,6 +13537,7 @@ async function statLoadData(){
       if(Array.isArray(names) && names.length){
         dStatGuru.pelanggaran = names.map(n => ({ guru: n, jumlah: null }));
         dStatGuru.pembinaan   = names.map(n => ({ guru: n, jumlah: null }));
+        dStatGuru.bimbingan   = names.map(n => ({ guru: n, jumlah: null }));
         adaCacheNama = true;
         statRender();
       }
@@ -13576,6 +13556,7 @@ async function statLoadData(){
     const d = await r.json();
     dStatGuru.pelanggaran = d.pelanggaran || [];
     dStatGuru.pembinaan = d.pembinaan || [];
+    dStatGuru.bimbingan = d.bimbingan || [];
     statLoaded = true;
     try{
       const namaUnik = [...new Set(dStatGuru.pelanggaran.map(r=>r.guru))].sort((a,b)=>a.localeCompare(b,'id'));
